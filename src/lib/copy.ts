@@ -3,8 +3,8 @@
 
 export const COPY = {
   // Brand
-  brand: '猜吧',
-  tagline: '来猜吧 · 历史会替你说话',
+  brand: '灼见',
+  tagline: '比世界快一步',
   signature: '我早就说过',
 
   // Auth
@@ -18,7 +18,7 @@ export const COPY = {
   switchToSignup: '没有账号？注册',
   switchToLogin: '已有账号？登录',
   signupSuccess: '注册成功，去邮箱看看确认链接',
-  loginWelcome: '来吧，看你这次能不能猜对',
+  loginWelcome: '比世界快一步 · 看你这次能不能押对',
 
   // Issue
   stancePending: '记下了，等结果',

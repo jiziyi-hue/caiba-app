@@ -1,1 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"><rect width="64" height="64" rx="18" fill="#1A73E8"></rect><text x="32" y="44" font-family="-apple-system, &#39;PingFang SC&#39;, &#39;Noto Sans SC&#39;, sans-serif" font-size="34" font-weight="800" fill="#FFFFFF" text-anchor="middle" letter-spacing="-1">猜</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#FFFFFF"/>
+  <path d="M22 10 C 14 24, 12 34, 18 46 C 22 54, 28 56, 32 56 C 28 50, 24 44, 24 36 C 24 28, 28 20, 32 14 C 28 12, 25 10, 22 10 Z" fill="#1A3A8E"/>
+  <path d="M42 14 C 50 26, 52 36, 46 46 C 42 54, 36 56, 32 56 C 36 50, 40 44, 40 36 C 40 28, 36 20, 32 14 C 36 12, 39 12, 42 14 Z" fill="#C8351E"/>
+  <rect x="27" y="27" width="10" height="10" rx="1.5" transform="rotate(45 32 32)" fill="#D9B675"/>
+</svg>
