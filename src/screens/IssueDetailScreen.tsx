@@ -97,7 +97,7 @@ export function IssueDetailScreen() {
   }
 
   const phaseInfo = getPhaseInfo(issue);
-  const decision = canCommit(issue, !!myJudgment);
+  const decision = canCommit(issue);
   const settled = issue.status === 'correct' || issue.status === 'wrong';
 
   return (
@@ -126,7 +126,6 @@ export function IssueDetailScreen() {
             {myJudgment && (
               <Pill kind={myJudgment.stance ? 'support' : 'oppose'} size="sm">
                 你已{myJudgment.stance ? '支持' : '反对'}
-                {!myJudgment.counts_toward_rank && ' · 围观'}
               </Pill>
             )}
           </div>
@@ -171,19 +170,6 @@ export function IssueDetailScreen() {
             <div style={{ fontSize: 15, fontWeight: 600, color: TOKENS.warm800 }}>
               {COPY.yourTake}
             </div>
-            {!decision.countsTowardRank && (
-              <div
-                style={{
-                  fontSize: 12,
-                  color: TOKENS.pendingFg,
-                  background: TOKENS.pendingTint,
-                  padding: '8px 12px',
-                  borderRadius: 10,
-                }}
-              >
-                {COPY.lateNotice}
-              </div>
-            )}
             <div style={{ display: 'flex', gap: 12 }}>
               <Btn
                 kind="support"

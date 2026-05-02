@@ -66,26 +66,28 @@ function PendingList({
   loading: boolean;
   onRefresh: () => void;
 }) {
-  const now = new Date();
-  const pending = issues.filter((i) => i.status === 'pending');
-  const overdue = pending.filter((i) => new Date(i.deadline) < now);
-  const upcoming = pending.filter((i) => new Date(i.deadline) >= now);
+  const open = issues.filter((i) => i.status === 'pending' && i.is_open);
+  const closed = issues.filter((i) => i.status === 'pending' && !i.is_open);
 
   return (
     <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 18 }}>
       {loading ? <div style={{ color: TOKENS.warm500 }}>{COPY.loading}</div> : null}
       {!loading && (
         <>
-          <Section title={`待结算（${overdue.length}）`}>
-            {overdue.length === 0 ? (
+          <Section title={`待结算（${closed.length}）`}>
+            {closed.length === 0 ? (
               <Empty />
             ) : (
-              overdue.map((i) => <SettleRow key={i.id} issue={i} onDone={onRefresh} />)
+              closed.map((i) => <SettleRow key={i.id} issue={i} onDone={onRefresh} />)
             )}
           </Section>
 
-          <Section title={`进行中（${upcoming.length}）`}>
-            {upcoming.length === 0 ? <Empty /> : upcoming.map((i) => <IssueRow key={i.id} issue={i} />)}
+          <Section title={`判断中（${open.length}）`}>
+            {open.length === 0 ? (
+              <Empty />
+            ) : (
+              open.map((i) => <IssueRow key={i.id} issue={i} onRefresh={onRefresh} />)
+            )}
           </Section>
         </>
       )}
@@ -130,8 +132,17 @@ function Empty() {
   );
 }
 
-function IssueRow({ issue }: { issue: Issue }) {
+function IssueRow({ issue, onRefresh }: { issue: Issue; onRefresh: () => void }) {
   const days = Math.ceil((new Date(issue.deadline).getTime() - Date.now()) / 86400000);
+  const [busy, setBusy] = useState(false);
+
+  async function closeJudging() {
+    setBusy(true);
+    await supabase.from('issues').update({ is_open: false }).eq('id', issue.id);
+    setBusy(false);
+    onRefresh();
+  }
+
   return (
     <div
       style={{
@@ -143,7 +154,7 @@ function IssueRow({ issue }: { issue: Issue }) {
     >
       <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
         <Pill kind="indigo" size="sm">{issue.category}</Pill>
-        <Pill kind="pending" size="sm">还差 {days} 天</Pill>
+        <Pill kind="indigo" size="sm">截止 {days} 天后</Pill>
       </div>
       <div style={{ fontSize: 14, fontWeight: 600, color: TOKENS.warm800, lineHeight: 1.4 }}>
         {issue.title}
@@ -158,6 +169,9 @@ function IssueRow({ issue }: { issue: Issue }) {
       >
         参与 {issue.total_count_cache ?? 0} · 计段位 {issue.ranked_count_cache ?? 0}
       </div>
+      <Btn kind="secondary" size="sm" disabled={busy} onClick={closeJudging} style={{ marginTop: 10 }}>
+        {busy ? '操作中…' : '关闭判断期'}
+      </Btn>
     </div>
   );
 }
@@ -294,11 +308,9 @@ function SettleRow({ issue, onDone }: { issue: Issue; onDone: () => void }) {
 }
 
 function CreateIssueForm({ onDone }: { onDone: () => void }) {
-  const [category, setCategory] = useState<'时事' | '科技' | '娱乐' | '体育'>('科技');
+  const [category, setCategory] = useState<'时事' | '科技' | '娱乐' | '体育' | '游戏'>('科技');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [opensAtDays, setOpensAtDays] = useState(1);
-  const [closesAtDays, setClosesAtDays] = useState(60);
   const [deadlineDays, setDeadlineDays] = useState(90);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -307,17 +319,13 @@ function CreateIssueForm({ onDone }: { onDone: () => void }) {
     setBusy(true);
     setError('');
     try {
-      const now = Date.now();
-      const opens = new Date(now + opensAtDays * 86400000).toISOString();
-      const closes = new Date(now + closesAtDays * 86400000).toISOString();
-      const deadline = new Date(now + deadlineDays * 86400000).toISOString();
+      const deadline = new Date(Date.now() + deadlineDays * 86400000).toISOString();
       const { error: e } = await supabase.from('issues').insert({
         category,
         title: title.trim(),
         description: description.trim() || null,
-        opens_at: opens,
-        closes_at: closes,
         deadline,
+        is_open: true,
       });
       if (e) throw e;
       onDone();
@@ -340,7 +348,7 @@ function CreateIssueForm({ onDone }: { onDone: () => void }) {
       <div style={{ background: '#fff', borderRadius: 14, padding: 16, boxShadow: TOKENS.shadowSm }}>
         <Lbl>分类</Lbl>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {(['时事', '科技', '娱乐', '体育'] as const).map((c) => (
+          {(['时事', '科技', '娱乐', '体育', '游戏'] as const).map((c) => (
             <button
               key={c}
               type="button"
@@ -385,12 +393,8 @@ function CreateIssueForm({ onDone }: { onDone: () => void }) {
       </div>
 
       <div style={{ background: '#fff', borderRadius: 14, padding: 16, boxShadow: TOKENS.shadowSm }}>
-        <Lbl>时间线（从现在起的天数）</Lbl>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <NumField label="预热到" value={opensAtDays} onChange={setOpensAtDays} />
-          <NumField label="窗口到" value={closesAtDays} onChange={setClosesAtDays} />
-          <NumField label="deadline" value={deadlineDays} onChange={setDeadlineDays} />
-        </div>
+        <Lbl>结算 deadline（从现在起的天数）</Lbl>
+        <NumField label="天后" value={deadlineDays} onChange={setDeadlineDays} />
       </div>
 
       {error && <div style={{ color: TOKENS.wrong, fontSize: 13 }}>{error}</div>}

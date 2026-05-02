@@ -22,7 +22,7 @@ interface AccuracyRow {
   accuracy_pct: number | null;
 }
 
-const SCOPES: Board[] = ['通用', '时事', '科技', '娱乐', '体育'];
+const SCOPES: Board[] = ['通用', '时事', '科技', '娱乐', '体育', '游戏'];
 
 export function ProfileScreen() {
   const { handle: handleParam } = useParams<{ handle?: string }>();

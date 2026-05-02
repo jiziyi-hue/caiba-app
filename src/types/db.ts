@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -98,13 +98,14 @@ export type Database = {
       issues: {
         Row: {
           category: string
-          closes_at: string
+          closes_at: string | null
           created_at: string
           creator_id: string | null
           deadline: string
           description: string | null
           id: string
-          opens_at: string
+          is_open: boolean
+          opens_at: string | null
           ranked_count_cache: number | null
           settled_at: string | null
           settled_by: string | null
@@ -118,13 +119,14 @@ export type Database = {
         }
         Insert: {
           category: string
-          closes_at: string
+          closes_at?: string | null
           created_at?: string
           creator_id?: string | null
           deadline: string
           description?: string | null
           id?: string
-          opens_at: string
+          is_open?: boolean
+          opens_at?: string | null
           ranked_count_cache?: number | null
           settled_at?: string | null
           settled_by?: string | null
@@ -138,13 +140,14 @@ export type Database = {
         }
         Update: {
           category?: string
-          closes_at?: string
+          closes_at?: string | null
           created_at?: string
           creator_id?: string | null
           deadline?: string
           description?: string | null
           id?: string
-          opens_at?: string
+          is_open?: boolean
+          opens_at?: string | null
           ranked_count_cache?: number | null
           settled_at?: string | null
           settled_by?: string | null
@@ -536,6 +539,14 @@ export type Database = {
     }
     Functions: {
       check_banned_words: { Args: { text_to_check: string }; Returns: string }
+      rate_count_comments: {
+        Args: { p_seconds: number; p_user: string }
+        Returns: number
+      }
+      rate_count_upvotes: {
+        Args: { p_seconds: number; p_user: string }
+        Returns: number
+      }
       settle_judgments: {
         Args: { p_issue_id: string; p_result: boolean }
         Returns: undefined

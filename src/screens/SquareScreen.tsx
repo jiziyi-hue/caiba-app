@@ -19,7 +19,7 @@ interface JoinedPost extends Post {
 const TABS = ['推荐', '关注', '热榜'] as const;
 type Tab = (typeof TABS)[number];
 
-const CATS = ['全部', '时事', '科技', '娱乐', '体育'] as const;
+const CATS = ['全部', '时事', '科技', '娱乐', '体育', '游戏'] as const;
 type Cat = (typeof CATS)[number];
 
 export function SquareScreen() {

@@ -17,7 +17,7 @@ import type { Database } from '../types/db';
 type Issue = Database['public']['Tables']['issues']['Row'];
 type Judgment = Database['public']['Tables']['judgments']['Row'];
 
-const FILTERS = ['全部', '科技', '时事', '娱乐', '体育'] as const;
+const FILTERS = ['全部', '科技', '时事', '娱乐', '体育', '游戏'] as const;
 type Filter = (typeof FILTERS)[number];
 
 export function HomeScreen() {

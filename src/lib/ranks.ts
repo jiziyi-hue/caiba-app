@@ -26,7 +26,7 @@ export const RANK_TIERS: RankTier[] = [
   { id: 'xuanming', name: '玄冥', dir: -1, level: 4, min: 0, max: 25, blurb: '神人级 · 把它的判断反过来即可' },
 ];
 
-export type Board = '通用' | '时事' | '科技' | '娱乐' | '体育';
+export type Board = '通用' | '时事' | '科技' | '娱乐' | '体育' | '游戏';
 
 export const BOARD_TINTS: Record<Board, { hue: string; label: string }> = {
   通用: { hue: '#3A3833', label: '通用' },
@@ -34,6 +34,7 @@ export const BOARD_TINTS: Record<Board, { hue: string; label: string }> = {
   科技: { hue: '#1A73E8', label: '科技' },
   娱乐: { hue: '#B85A7A', label: '娱乐' },
   体育: { hue: '#C9A961', label: '体育' },
+  游戏: { hue: '#7C3AED', label: '游戏' },
 };
 
 export function getRank(accuracy: number | null | undefined): RankTier {
