@@ -11,6 +11,7 @@ import { TopicScreen } from './screens/TopicScreen';
 import { PostScreen } from './screens/PostScreen';
 import { ComposeScreen } from './screens/ComposeScreen';
 import { AdminSettlementScreen } from './screens/AdminSettlementScreen';
+import { AdminModerationScreen } from './screens/AdminModerationScreen';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           </Route>
           <Route element={<RequireAuth requireAdmin />}>
             <Route path="/admin/settle" element={<AdminSettlementScreen />} />
+            <Route path="/admin/moderation" element={<AdminModerationScreen />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      banned_words: {
+        Row: {
+          added_at: string | null
+          added_by: string | null
+          category: string | null
+          id: string
+          word: string
+        }
+        Insert: {
+          added_at?: string | null
+          added_by?: string | null
+          category?: string | null
+          id?: string
+          word: string
+        }
+        Update: {
+          added_at?: string | null
+          added_by?: string | null
+          category?: string | null
+          id?: string
+          word?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banned_words_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           author_id: string
@@ -503,6 +535,7 @@ export type Database = {
       }
     }
     Functions: {
+      check_banned_words: { Args: { text_to_check: string }; Returns: string }
       settle_judgments: {
         Args: { p_issue_id: string; p_result: boolean }
         Returns: undefined

@@ -96,9 +96,21 @@ export function ProfileScreen() {
         title="我的判断力"
         action={
           isOwn ? (
-            <Btn kind="secondary" size="sm" onClick={() => navigate('/me/edit')}>
-              编辑
-            </Btn>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {profile?.is_admin && (
+                <>
+                  <Btn kind="ghost" size="sm" onClick={() => navigate('/admin/settle')}>
+                    结算
+                  </Btn>
+                  <Btn kind="ghost" size="sm" onClick={() => navigate('/admin/moderation')}>
+                    审核
+                  </Btn>
+                </>
+              )}
+              <Btn kind="secondary" size="sm" onClick={() => navigate('/me/edit')}>
+                编辑
+              </Btn>
+            </div>
           ) : null
         }
       />
