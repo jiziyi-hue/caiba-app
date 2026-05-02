@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
+import { fetchFollowingIds } from '../lib/follows';
 import { TOKENS } from '../components/tokens';
 import { PageHeader, PostCard, TabBar, type PostCardData } from '../components/shared';
 import { COPY } from '../lib/copy';
@@ -34,12 +35,31 @@ export function SquareScreen() {
     (async () => {
       setLoading(true);
       const orderField = tab === '热榜' ? 'upvotes' : 'created_at';
-      const { data } = await supabase
+      let query = supabase
         .from('posts')
         .select('*, author:profiles(*), issue:issues(*)')
         .order(orderField, { ascending: false })
         .limit(30);
-      setPosts((data ?? []) as JoinedPost[]);
+
+      if (tab === '关注') {
+        if (!user) {
+          setPosts([]);
+          setLoading(false);
+          return;
+        }
+        const followingIds = await fetchFollowingIds(user.id);
+        if (followingIds.length === 0) {
+          setPosts([]);
+        } else {
+          query = query.in('author_id', followingIds);
+          const { data } = await query;
+          setPosts((data ?? []) as JoinedPost[]);
+        }
+      } else {
+        const { data } = await query;
+        setPosts((data ?? []) as JoinedPost[]);
+      }
+
       const { data: tps } = await supabase
         .from('topics')
         .select('*')
@@ -48,7 +68,7 @@ export function SquareScreen() {
       setTopics(tps ?? []);
       setLoading(false);
     })();
-  }, [tab]);
+  }, [tab, user]);
 
   const visiblePosts = cat === '全部' ? posts : posts.filter((p) => p.issue?.category === cat);
   const visibleTopics = cat === '全部' ? topics : topics.filter((t) => t.category === cat);
@@ -206,7 +226,11 @@ export function SquareScreen() {
               boxShadow: TOKENS.shadowSm,
             }}
           >
-            暂无{cat === '全部' ? '' : cat}观点 · 写第一条 →
+            {tab === '关注' && !user
+              ? '登录后看你关注的人发的内容'
+              : tab === '关注'
+              ? '还没关注任何人 · 去别人主页点关注'
+              : `暂无${cat === '全部' ? '' : cat}观点 · 写第一条 →`}
           </div>
         ) : (
           visiblePosts.map((p) => {

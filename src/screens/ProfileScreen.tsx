@@ -6,6 +6,7 @@ import { TOKENS } from '../components/tokens';
 import { Avatar, Btn, PageHeader, Pill, TabBar } from '../components/shared';
 import { RankBadge } from '../components/RankBadge';
 import { getRank, BOARD_TINTS, type Board } from '../lib/ranks';
+import { useFollowCounts, useIsFollowing } from '../lib/follows';
 import { COPY } from '../lib/copy';
 import type { Database } from '../types/db';
 
@@ -34,6 +35,11 @@ export function ProfileScreen() {
   const [loading, setLoading] = useState(true);
 
   const isOwn = !handleParam || handleParam === myProfile?.handle;
+  const { counts } = useFollowCounts(profile?.id ?? null);
+  const { following, toggle: toggleFollow } = useIsFollowing(
+    profile?.id ?? null,
+    myProfile?.id ?? null
+  );
 
   useEffect(() => {
     (async () => {
@@ -93,11 +99,13 @@ export function ProfileScreen() {
   return (
     <div style={{ background: TOKENS.warm25, minHeight: '100vh', paddingBottom: 120 }}>
       <PageHeader
-        title="我的判断力"
+        title={isOwn ? '我的判断力' : profile.name}
+        back={!isOwn}
+        onBack={() => navigate(-1)}
         action={
           isOwn ? (
             <div style={{ display: 'flex', gap: 6 }}>
-              {profile?.is_admin && (
+              {myProfile?.is_admin && (
                 <>
                   <Btn kind="ghost" size="sm" onClick={() => navigate('/admin/settle')}>
                     结算
@@ -111,7 +119,19 @@ export function ProfileScreen() {
                 编辑
               </Btn>
             </div>
-          ) : null
+          ) : myProfile ? (
+            <Btn
+              kind={following ? 'secondary' : 'primary'}
+              size="sm"
+              onClick={toggleFollow}
+            >
+              {following ? '已关注' : '关注'}
+            </Btn>
+          ) : (
+            <Btn kind="primary" size="sm" onClick={() => navigate('/login')}>
+              登录后关注
+            </Btn>
+          )
         }
       />
 
@@ -167,6 +187,28 @@ export function ProfileScreen() {
                 {profile.bio}
               </div>
             )}
+            <div
+              style={{
+                display: 'flex',
+                gap: 14,
+                marginTop: 8,
+                fontSize: 12,
+                color: TOKENS.warm600,
+              }}
+            >
+              <span>
+                <strong style={{ color: TOKENS.warm900, fontVariantNumeric: 'tabular-nums' }}>
+                  {counts.following}
+                </strong>{' '}
+                关注
+              </span>
+              <span>
+                <strong style={{ color: TOKENS.warm900, fontVariantNumeric: 'tabular-nums' }}>
+                  {counts.followers}
+                </strong>{' '}
+                粉丝
+              </span>
+            </div>
           </div>
         </div>
 

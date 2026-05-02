@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/auth';
+import { useIsTopicFollowed } from '../lib/follows';
 import { TOKENS } from '../components/tokens';
-import { PageHeader, Pill, PostCard, type PostCardData } from '../components/shared';
+import { Btn, PageHeader, Pill, PostCard, type PostCardData } from '../components/shared';
 import { COPY } from '../lib/copy';
 import type { Database } from '../types/db';
 
@@ -17,8 +19,10 @@ interface JoinedPost extends Post {
 export function TopicScreen() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [topic, setTopic] = useState<Topic | null>(null);
   const [posts, setPosts] = useState<JoinedPost[]>([]);
+  const { followed, toggle: toggleFollow } = useIsTopicFollowed(id ?? null, user?.id ?? null);
 
   useEffect(() => {
     if (!id) return;
@@ -41,7 +45,22 @@ export function TopicScreen() {
 
   return (
     <div style={{ background: TOKENS.warm25, minHeight: '100vh', paddingBottom: 40 }}>
-      <PageHeader title={`#${topic.name}`} back onBack={() => navigate(-1)} />
+      <PageHeader
+        title={`#${topic.name}`}
+        back
+        onBack={() => navigate(-1)}
+        action={
+          user ? (
+            <Btn kind={followed ? 'secondary' : 'primary'} size="sm" onClick={toggleFollow}>
+              {followed ? '已关注' : '关注'}
+            </Btn>
+          ) : (
+            <Btn kind="primary" size="sm" onClick={() => navigate('/login')}>
+              登录后关注
+            </Btn>
+          )
+        }
+      />
 
       <div style={{ padding: '14px 16px' }}>
         <div

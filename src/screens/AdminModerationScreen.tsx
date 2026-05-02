@@ -6,29 +6,18 @@ import { Btn, PageHeader, Pill } from '../components/shared';
 import { COPY } from '../lib/copy';
 import type { Database } from '../types/db';
 
-type Post = Database['public']['Tables']['posts']['Row'];
-type Comment = Database['public']['Tables']['comments']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type BannedWord = Database['public']['Tables']['banned_words']['Row'];
 
-interface JoinedPost extends Post {
-  author: Pick<Profile, 'id' | 'name' | 'handle' | 'is_admin'>;
-}
-interface JoinedComment extends Comment {
-  author: Pick<Profile, 'id' | 'name' | 'handle' | 'is_admin'>;
-}
-
-type Tab = 'posts' | 'comments' | 'profiles' | 'words';
+type Tab = 'profiles' | 'words';
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'posts', label: '观点帖' },
-  { id: 'comments', label: '评论' },
-  { id: 'profiles', label: '用户' },
+  { id: 'profiles', label: '用户头像' },
   { id: 'words', label: '违禁词' },
 ];
 
 export function AdminModerationScreen() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>('posts');
+  const [tab, setTab] = useState<Tab>('profiles');
 
   return (
     <div style={{ background: TOKENS.warm25, minHeight: '100vh', paddingBottom: 40 }}>
@@ -68,96 +57,9 @@ export function AdminModerationScreen() {
       </div>
 
       <div style={{ padding: '14px 16px' }}>
-        {tab === 'posts' && <PostsList />}
-        {tab === 'comments' && <CommentsList />}
         {tab === 'profiles' && <ProfilesList />}
         {tab === 'words' && <BannedWordsList />}
       </div>
-    </div>
-  );
-}
-
-function PostsList() {
-  const [posts, setPosts] = useState<JoinedPost[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  async function load() {
-    setLoading(true);
-    const { data } = await supabase
-      .from('posts')
-      .select('*, author:profiles(id,name,handle,is_admin)')
-      .order('created_at', { ascending: false })
-      .limit(50);
-    setPosts((data ?? []) as JoinedPost[]);
-    setLoading(false);
-  }
-  useEffect(() => { load(); }, []);
-
-  async function del(id: string) {
-    if (!confirm('确定删除？此操作不可撤销')) return;
-    const { error } = await supabase.from('posts').delete().eq('id', id);
-    if (error) {
-      alert('删除失败：' + error.message);
-      return;
-    }
-    await load();
-  }
-
-  if (loading) return <Loading />;
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {posts.length === 0 && <Empty />}
-      {posts.map((p) => (
-        <Row
-          key={p.id}
-          title={p.title}
-          subtitle={`by ${p.author.name} (@${p.author.handle}) · ${formatTime(p.created_at!)}`}
-          body={extractExcerpt(p.content)}
-          isAdmin={p.author.is_admin ?? false}
-          onDelete={() => del(p.id)}
-        />
-      ))}
-    </div>
-  );
-}
-
-function CommentsList() {
-  const [comments, setComments] = useState<JoinedComment[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  async function load() {
-    setLoading(true);
-    const { data } = await supabase
-      .from('comments')
-      .select('*, author:profiles(id,name,handle,is_admin)')
-      .order('created_at', { ascending: false })
-      .limit(80);
-    setComments((data ?? []) as JoinedComment[]);
-    setLoading(false);
-  }
-  useEffect(() => { load(); }, []);
-
-  async function del(id: string) {
-    if (!confirm('确定删除？')) return;
-    const { error } = await supabase.from('comments').delete().eq('id', id);
-    if (error) { alert('删除失败：' + error.message); return; }
-    await load();
-  }
-
-  if (loading) return <Loading />;
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {comments.length === 0 && <Empty />}
-      {comments.map((c) => (
-        <Row
-          key={c.id}
-          title={c.body.length > 60 ? c.body.slice(0, 60) + '…' : c.body}
-          subtitle={`by ${c.author.name} (@${c.author.handle}) · ${formatTime(c.created_at!)}`}
-          body={c.body}
-          isAdmin={c.author.is_admin ?? false}
-          onDelete={() => del(c.id)}
-        />
-      ))}
     </div>
   );
 }
@@ -414,98 +316,6 @@ function categoryLabel(c: string | null): string {
   return ({ terror: '涉恐', explosive: '涉爆', porn: '涉黄', political: '涉政' } as Record<string, string>)[c ?? ''] ?? '其他';
 }
 
-function Row({
-  title,
-  subtitle,
-  body,
-  isAdmin,
-  onDelete,
-}: {
-  title: string;
-  subtitle: string;
-  body: string;
-  isAdmin: boolean;
-  onDelete: () => void;
-}) {
-  return (
-    <div
-      style={{
-        background: '#fff',
-        borderRadius: 14,
-        padding: 14,
-        boxShadow: TOKENS.shadowSm,
-      }}
-    >
-      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: TOKENS.warm800 }}>{title}</span>
-            {isAdmin && (
-              <span
-                style={{
-                  fontSize: 9,
-                  background: TOKENS.indigo50,
-                  color: TOKENS.indigo700,
-                  padding: '1px 6px',
-                  borderRadius: 4,
-                  fontWeight: 700,
-                }}
-              >
-                ADMIN
-              </span>
-            )}
-          </div>
-          <div
-            style={{
-              fontSize: 12,
-              color: TOKENS.warm500,
-              fontFamily: TOKENS.fontMono,
-              marginBottom: 6,
-            }}
-          >
-            {subtitle}
-          </div>
-          {body && body !== title && (
-            <div
-              style={{
-                fontSize: 13,
-                color: TOKENS.warm700,
-                lineHeight: 1.5,
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {body}
-            </div>
-          )}
-        </div>
-        {!isAdmin && (
-          <button
-            type="button"
-            onClick={onDelete}
-            style={{
-              padding: '6px 12px',
-              fontSize: 12,
-              color: TOKENS.wrong,
-              background: TOKENS.wrongTint,
-              border: 'none',
-              borderRadius: 8,
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontFamily: TOKENS.fontSans,
-              flexShrink: 0,
-            }}
-          >
-            删除
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function Loading() {
   return (
     <div style={{ color: TOKENS.warm500, padding: 20, textAlign: 'center' }}>
@@ -531,19 +341,3 @@ function Empty() {
   );
 }
 
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getMonth() + 1}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
-function extractExcerpt(content: unknown): string {
-  if (typeof content === 'string') return content.slice(0, 200);
-  if (Array.isArray(content)) {
-    return content
-      .filter((b: unknown) => (b as { type?: string }).type === 'text')
-      .map((b: unknown) => (b as { value?: string }).value || '')
-      .join(' ')
-      .slice(0, 200);
-  }
-  return '';
-}
