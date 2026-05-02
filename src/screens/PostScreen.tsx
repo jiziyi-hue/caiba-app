@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { TOKENS } from '../components/tokens';
 import { Avatar, IssueBadge, PageHeader, Pill } from '../components/shared';
+import { Comments } from '../components/Comments';
 import { COPY } from '../lib/copy';
 import type { Database } from '../types/db';
 
@@ -134,6 +135,8 @@ export function PostScreen() {
             )}
           </div>
         </div>
+
+        <Comments target={{ type: 'post', id: post.id }} />
       </div>
     </div>
   );

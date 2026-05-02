@@ -20,21 +20,26 @@ export function StanceBar({ supportPct, total, rankedCount }: StanceBarProps) {
           background: TOKENS.warm50,
           overflow: 'hidden',
           boxShadow: 'inset 0 1px 2px rgba(35,34,32,0.06)',
+          display: 'flex',
         }}
       >
         {!empty && (
-          <div
-            style={{
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: `${supportPct}%`,
-              background: TOKENS.support,
-              borderRadius: 999,
-              transition: 'width 360ms cubic-bezier(0.22,1,0.36,1)',
-            }}
-          />
+          <>
+            <div
+              style={{
+                width: `${supportPct}%`,
+                background: TOKENS.support,
+                transition: 'width 360ms cubic-bezier(0.22,1,0.36,1)',
+              }}
+            />
+            <div
+              style={{
+                width: `${100 - supportPct}%`,
+                background: TOKENS.oppose,
+                transition: 'width 360ms cubic-bezier(0.22,1,0.36,1)',
+              }}
+            />
+          </>
         )}
         {empty && (
           <div

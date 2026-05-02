@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { TOKENS } from '../components/tokens';
 import { Btn, PageHeader, Pill, StanceBar } from '../components/shared';
+import { Comments } from '../components/Comments';
 import { COPY } from '../lib/copy';
 import { canCommit, getPhaseInfo } from '../lib/phase';
 import type { Database } from '../types/db';
@@ -263,6 +264,8 @@ export function IssueDetailScreen() {
             )}
           </div>
         )}
+
+        <Comments target={{ type: 'issue', id: issue.id }} />
       </div>
 
       <button

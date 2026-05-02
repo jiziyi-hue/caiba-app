@@ -14,6 +14,55 @@ export type Database = {
   }
   public: {
     Tables: {
+      comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string | null
+          id: string
+          issue_id: string | null
+          post_id: string | null
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string | null
+          id?: string
+          issue_id?: string | null
+          post_id?: string | null
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string | null
+          id?: string
+          issue_id?: string | null
+          post_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       issues: {
         Row: {
           category: string
@@ -454,7 +503,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      settle_judgments: {
+        Args: { p_issue_id: string; p_result: boolean }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
