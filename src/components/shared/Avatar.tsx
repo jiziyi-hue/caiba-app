@@ -4,6 +4,7 @@ interface AvatarProps {
   name: string;
   size?: number;
   tint?: AvatarTint;
+  url?: string | null;
 }
 
 const TINTS: Record<AvatarTint, { bg: string; fg: string }> = {
@@ -13,7 +14,23 @@ const TINTS: Record<AvatarTint, { bg: string; fg: string }> = {
   rose: { bg: '#F2DDD9', fg: '#9A4C42' },
 };
 
-export function Avatar({ name, size = 32, tint = 'warm' }: AvatarProps) {
+export function Avatar({ name, size = 32, tint = 'warm', url }: AvatarProps) {
+  if (url) {
+    return (
+      <img
+        src={url}
+        alt=""
+        style={{
+          width: size,
+          height: size,
+          borderRadius: 999,
+          objectFit: 'cover',
+          flexShrink: 0,
+          background: TINTS[tint].bg,
+        }}
+      />
+    );
+  }
   const { bg, fg } = TINTS[tint];
   return (
     <div

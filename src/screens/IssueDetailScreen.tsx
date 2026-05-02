@@ -15,7 +15,7 @@ type Post = Database['public']['Tables']['posts']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
 interface JoinedPost extends Post {
-  author: Pick<Profile, 'name' | 'avatar_tint' | 'is_admin'>;
+  author: Pick<Profile, 'name' | 'avatar_tint' | 'avatar_url' | 'is_admin'>;
 }
 
 export function IssueDetailScreen() {
@@ -43,7 +43,7 @@ export function IssueDetailScreen() {
     }
     const { data: posts } = await supabase
       .from('posts')
-      .select('*, author:profiles!posts_author_id_fkey(name,avatar_tint,is_admin)')
+      .select('*, author:profiles!posts_author_id_fkey(name,avatar_tint,avatar_url,is_admin)')
       .eq('issue_id', id)
       .order('upvotes', { ascending: false })
       .limit(5);
@@ -296,6 +296,7 @@ export function IssueDetailScreen() {
                     name: p.author.name,
                     accuracy: 0,
                     tint: (p.author.avatar_tint as 'indigo') ?? 'warm',
+                    avatarUrl: p.author.avatar_url,
                   },
                   upvotes: p.upvotes ?? 0,
                   comments: p.comment_count ?? 0,

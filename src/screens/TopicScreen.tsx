@@ -121,6 +121,7 @@ export function TopicScreen() {
                       name: p.author.name,
                       accuracy: 0,
                       tint: (p.author.avatar_tint as 'indigo') ?? 'warm',
+                      avatarUrl: p.author.avatar_url,
                     },
                     upvotes: p.upvotes ?? 0,
                     comments: p.comment_count ?? 0,

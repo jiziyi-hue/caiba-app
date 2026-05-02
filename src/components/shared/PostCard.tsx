@@ -14,6 +14,7 @@ export interface PostCardData {
     name: string;
     accuracy: number;
     tint?: AvatarTint;
+    avatarUrl?: string | null;
   };
   upvotes: number;
   comments: number;
@@ -83,7 +84,12 @@ export function PostCard({ post, onOpen }: PostCardProps) {
         </div>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 4 }}>
-        <Avatar name={post.author.name[0]} size={24} tint={post.author.tint || 'warm'} />
+        <Avatar
+          name={post.author.name[0]}
+          size={24}
+          tint={post.author.tint || 'warm'}
+          url={post.author.avatarUrl}
+        />
         <span style={{ fontSize: 13, color: TOKENS.warm700, fontWeight: 500 }}>
           {post.author.name}
         </span>

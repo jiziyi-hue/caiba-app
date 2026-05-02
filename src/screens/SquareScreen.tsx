@@ -241,7 +241,12 @@ export function SquareScreen() {
               issue: p.issue ? { title: p.issue.title } : null,
               stance: p.stance == null ? null : p.stance ? 'support' : 'oppose',
               verified: (p.verified_status ?? null) as 'correct' | 'wrong' | null,
-              author: { name: p.author.name, accuracy: 0, tint: (p.author.avatar_tint as 'indigo') ?? 'warm' },
+              author: {
+                name: p.author.name,
+                accuracy: 0,
+                tint: (p.author.avatar_tint as 'indigo') ?? 'warm',
+                avatarUrl: p.author.avatar_url,
+              },
               upvotes: p.upvotes ?? 0,
               comments: p.comment_count ?? 0,
             };

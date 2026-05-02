@@ -139,6 +139,7 @@ export function PostScreen() {
               name={post.author.name[0] ?? '判'}
               size={28}
               tint={(post.author.avatar_tint as 'indigo') ?? 'warm'}
+              url={post.author.avatar_url}
             />
             <span>{post.author.name}</span>
             <span style={{ color: TOKENS.warm400 }}>·</span>
