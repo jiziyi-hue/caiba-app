@@ -31,7 +31,7 @@ export function TopicScreen() {
       setTopic(t);
       const { data: p } = await supabase
         .from('posts')
-        .select('*, author:profiles(*), issue:issues(*)')
+        .select('*, author:profiles!posts_author_id_fkey(*), issue:issues(*)')
         .eq('topic_id', id)
         .order('upvotes', { ascending: false })
         .limit(30);

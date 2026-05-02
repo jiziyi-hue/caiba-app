@@ -33,7 +33,7 @@ export function PostScreen() {
     if (!id) return;
     const { data } = await supabase
       .from('posts')
-      .select('*, author:profiles(*), issue:issues(*)')
+      .select('*, author:profiles!posts_author_id_fkey(*), issue:issues(*)')
       .eq('id', id)
       .single();
     setPost(data as JoinedPost);

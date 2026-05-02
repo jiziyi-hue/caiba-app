@@ -34,7 +34,7 @@ export function Comments({ target }: CommentsProps) {
     setLoading(true);
     const { data } = await supabase
       .from('comments')
-      .select('*, author:profiles(id,name,handle,avatar_url,avatar_tint,is_admin)')
+      .select('*, author:profiles!comments_author_id_fkey(id,name,handle,avatar_url,avatar_tint,is_admin)')
       .eq(filterCol, target.id)
       .order('created_at', { ascending: true })
       .limit(200);

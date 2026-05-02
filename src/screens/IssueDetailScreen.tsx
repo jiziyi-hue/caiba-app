@@ -43,7 +43,7 @@ export function IssueDetailScreen() {
     }
     const { data: posts } = await supabase
       .from('posts')
-      .select('*, author:profiles(name,avatar_tint,is_admin)')
+      .select('*, author:profiles!posts_author_id_fkey(name,avatar_tint,is_admin)')
       .eq('issue_id', id)
       .order('upvotes', { ascending: false })
       .limit(5);

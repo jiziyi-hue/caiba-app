@@ -37,7 +37,7 @@ export function SquareScreen() {
       const orderField = tab === '热榜' ? 'upvotes' : 'created_at';
       let query = supabase
         .from('posts')
-        .select('*, author:profiles(*), issue:issues(*)')
+        .select('*, author:profiles!posts_author_id_fkey(*), issue:issues(*)')
         .order(orderField, { ascending: false })
         .limit(30);
 
