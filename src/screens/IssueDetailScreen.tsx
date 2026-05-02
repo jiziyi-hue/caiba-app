@@ -41,7 +41,11 @@ export function IssueDetailScreen() {
   }, [id, user?.id]);
 
   async function commit(stance: boolean) {
-    if (!user || !issue) return;
+    if (!issue) return;
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     setSubmitting(true);
     setError('');
     try {

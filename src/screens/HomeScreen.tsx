@@ -73,26 +73,51 @@ export function HomeScreen() {
         sub={
           loading
             ? COPY.loading
-            : `共 ${issues.length} 条 · 你已表态 ${myJudgments.size} 条`
+            : user
+            ? `共 ${issues.length} 条 · 你已表态 ${myJudgments.size} 条`
+            : `共 ${issues.length} 条 · 登录后即可表态`
         }
         action={
-          <button
-            type="button"
-            onClick={() => navigate('/me')}
-            style={{
-              border: 'none',
-              background: 'transparent',
-              padding: 0,
-              cursor: 'pointer',
-            }}
-            aria-label="去个人主页"
-          >
-            <Avatar
-              name={profile?.name?.[0] ?? '你'}
-              size={36}
-              tint={(profile?.avatar_tint as 'indigo') ?? 'indigo'}
-            />
-          </button>
+          user ? (
+            <button
+              type="button"
+              onClick={() => navigate('/me')}
+              style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}
+              aria-label="去个人主页"
+            >
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt=""
+                  style={{ width: 36, height: 36, borderRadius: 999, objectFit: 'cover' }}
+                />
+              ) : (
+                <Avatar
+                  name={profile?.name?.[0] ?? '你'}
+                  size={36}
+                  tint={(profile?.avatar_tint as 'indigo') ?? 'indigo'}
+                />
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 999,
+                border: 'none',
+                background: TOKENS.indigo500,
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: TOKENS.fontSans,
+              }}
+            >
+              登录
+            </button>
+          )
         }
       />
 
@@ -153,7 +178,12 @@ export function HomeScreen() {
         )}
       </div>
 
-      <TabBar active="议题" onTabChange={(t) => navigate(t === '广场' ? '/square' : t === '我' ? '/me' : '/')} />
+      <TabBar
+        active="议题"
+        onTabChange={(t) =>
+          navigate(t === '广场' ? '/square' : t === '我' ? (user ? '/me' : '/login') : '/')
+        }
+      />
     </div>
   );
 }

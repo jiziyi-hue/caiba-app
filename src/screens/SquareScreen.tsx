@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/auth';
 import { TOKENS } from '../components/tokens';
 import { PageHeader, PostCard, TabBar, type PostCardData } from '../components/shared';
 import { COPY } from '../lib/copy';
@@ -18,6 +19,7 @@ type Tab = (typeof TABS)[number];
 
 export function SquareScreen() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('推荐');
   const [posts, setPosts] = useState<JoinedPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,7 +107,7 @@ export function SquareScreen() {
 
       <button
         type="button"
-        onClick={() => navigate('/compose')}
+        onClick={() => navigate(user ? '/compose' : '/login')}
         style={{
           position: 'fixed',
           right: 20,
@@ -128,7 +130,9 @@ export function SquareScreen() {
 
       <TabBar
         active="广场"
-        onTabChange={(t) => navigate(t === '议题' ? '/' : t === '我' ? '/me' : '/square')}
+        onTabChange={(t) =>
+          navigate(t === '议题' ? '/' : t === '我' ? (user ? '/me' : '/login') : '/square')
+        }
       />
     </div>
   );
