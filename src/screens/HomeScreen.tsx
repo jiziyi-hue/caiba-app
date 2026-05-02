@@ -10,6 +10,7 @@ import {
   type IssueCardData,
 } from '../components/shared';
 import { useAuth } from '../lib/auth';
+import { useUnreadCount } from '../lib/notifications';
 import { COPY } from '../lib/copy';
 import { daysLeft } from '../lib/phase';
 import type { Database } from '../types/db';
@@ -89,26 +90,29 @@ export function HomeScreen() {
         }
         action={
           user ? (
-            <button
-              type="button"
-              onClick={() => navigate('/me')}
-              style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}
-              aria-label="去个人主页"
-            >
-              {profile?.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt=""
-                  style={{ width: 36, height: 36, borderRadius: 999, objectFit: 'cover' }}
-                />
-              ) : (
-                <Avatar
-                  name={profile?.name?.[0] ?? '你'}
-                  size={36}
-                  tint={(profile?.avatar_tint as 'indigo') ?? 'indigo'}
-                />
-              )}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <BellButton onClick={() => navigate('/notifications')} userId={user.id} />
+              <button
+                type="button"
+                onClick={() => navigate('/me')}
+                style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}
+                aria-label="去个人主页"
+              >
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt=""
+                    style={{ width: 36, height: 36, borderRadius: 999, objectFit: 'cover' }}
+                  />
+                ) : (
+                  <Avatar
+                    name={profile?.name?.[0] ?? '你'}
+                    size={36}
+                    tint={(profile?.avatar_tint as 'indigo') ?? 'indigo'}
+                  />
+                )}
+              </button>
+            </div>
           ) : (
             <button
               type="button"
@@ -324,5 +328,54 @@ export function HomeScreen() {
         }
       />
     </div>
+  );
+}
+
+function BellButton({ onClick, userId }: { onClick: () => void; userId: string }) {
+  const count = useUnreadCount(userId);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="消息"
+      style={{
+        position: 'relative',
+        width: 36,
+        height: 36,
+        borderRadius: 999,
+        background: TOKENS.warm50,
+        border: 'none',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 18,
+      }}
+    >
+      🔔
+      {count > 0 && (
+        <span
+          style={{
+            position: 'absolute',
+            top: -2,
+            right: -2,
+            background: TOKENS.wrong,
+            color: '#fff',
+            fontSize: 10,
+            fontWeight: 700,
+            borderRadius: 999,
+            minWidth: 16,
+            height: 16,
+            padding: '0 4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {count > 99 ? '99+' : count}
+        </span>
+      )}
+    </button>
   );
 }

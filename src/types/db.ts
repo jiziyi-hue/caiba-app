@@ -44,6 +44,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "banned_words_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "user_notifications"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       comments: {
@@ -78,6 +85,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "user_notifications"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "comments_issue_id_fkey"
@@ -168,11 +182,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "issues_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "user_notifications"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "issues_settled_by_fkey"
             columns: ["settled_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "issues_settled_by_fkey"
+            columns: ["settled_by"]
+            isOneToOne: false
+            referencedRelation: "user_notifications"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -228,6 +256,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "judgments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_notifications"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       post_upvotes: {
@@ -260,6 +295,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_upvotes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_notifications"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -312,6 +354,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "user_notifications"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "posts_issue_id_fkey"
             columns: ["issue_id"]
             isOneToOne: false
@@ -336,8 +385,10 @@ export type Database = {
           handle: string
           id: string
           is_admin: boolean | null
+          is_banned: boolean
           joined_at: string | null
           name: string
+          notifications_seen_at: string
         }
         Insert: {
           avatar_tint?: string | null
@@ -347,8 +398,10 @@ export type Database = {
           handle: string
           id: string
           is_admin?: boolean | null
+          is_banned?: boolean
           joined_at?: string | null
           name: string
+          notifications_seen_at?: string
         }
         Update: {
           avatar_tint?: string | null
@@ -358,8 +411,10 @@ export type Database = {
           handle?: string
           id?: string
           is_admin?: boolean | null
+          is_banned?: boolean
           joined_at?: string | null
           name?: string
+          notifications_seen_at?: string
         }
         Relationships: []
       }
@@ -393,6 +448,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_notifications"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -465,11 +527,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "user_follows_followee_id_fkey"
+            columns: ["followee_id"]
+            isOneToOne: false
+            referencedRelation: "user_notifications"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "user_follows_follower_id_fkey"
             columns: ["follower_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "user_notifications"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -501,6 +577,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "judgments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_notifications"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       user_accuracy_overall: {
@@ -519,7 +602,53 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "judgments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_notifications"
+            referencedColumns: ["user_id"]
+          },
         ]
+      }
+      user_notifications: {
+        Row: {
+          new_comments: number | null
+          new_followers: number | null
+          new_likes: number | null
+          new_settlements: number | null
+          notifications_seen_at: string | null
+          total_correct: number | null
+          total_followers: number | null
+          total_likes: number | null
+          total_post_comments: number | null
+          user_id: string | null
+        }
+        Insert: {
+          new_comments?: never
+          new_followers?: never
+          new_likes?: never
+          new_settlements?: never
+          notifications_seen_at?: string | null
+          total_correct?: never
+          total_followers?: never
+          total_likes?: never
+          total_post_comments?: never
+          user_id?: string | null
+        }
+        Update: {
+          new_comments?: never
+          new_followers?: never
+          new_likes?: never
+          new_settlements?: never
+          notifications_seen_at?: string | null
+          total_correct?: never
+          total_followers?: never
+          total_likes?: never
+          total_post_comments?: never
+          user_id?: string | null
+        }
+        Relationships: []
       }
       user_streak: {
         Row: {
@@ -534,11 +663,19 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "judgments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_notifications"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
     }
     Functions: {
       check_banned_words: { Args: { text_to_check: string }; Returns: string }
+      mark_notifications_seen: { Args: never; Returns: undefined }
       rate_count_comments: {
         Args: { p_seconds: number; p_user: string }
         Returns: number
@@ -558,6 +695,7 @@ export type Database = {
           upvoted: boolean
         }[]
       }
+      unsettle_issue: { Args: { p_issue_id: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

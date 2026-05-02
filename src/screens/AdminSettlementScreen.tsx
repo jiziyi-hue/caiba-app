@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { TOKENS } from '../components/tokens';
 import { Btn, PageHeader, Pill } from '../components/shared';
@@ -12,7 +12,8 @@ type Mode = 'pending' | 'create';
 
 export function AdminSettlementScreen() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>('pending');
+  const [params] = useSearchParams();
+  const [mode, setMode] = useState<Mode>(params.get('new') === '1' ? 'create' : 'pending');
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -68,6 +69,7 @@ function PendingList({
 }) {
   const open = issues.filter((i) => i.status === 'pending' && i.is_open);
   const closed = issues.filter((i) => i.status === 'pending' && !i.is_open);
+  const settled = issues.filter((i) => i.status !== 'pending');
 
   return (
     <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -87,6 +89,16 @@ function PendingList({
               <Empty />
             ) : (
               open.map((i) => <IssueRow key={i.id} issue={i} onRefresh={onRefresh} />)
+            )}
+          </Section>
+
+          <Section title={`已结算 / 作废（${settled.length}）`}>
+            {settled.length === 0 ? (
+              <Empty />
+            ) : (
+              settled.slice(0, 20).map((i) => (
+                <SettledRow key={i.id} issue={i} onRefresh={onRefresh} />
+              ))
             )}
           </Section>
         </>
@@ -135,12 +147,33 @@ function Empty() {
 function IssueRow({ issue, onRefresh }: { issue: Issue; onRefresh: () => void }) {
   const days = Math.ceil((new Date(issue.deadline).getTime() - Date.now()) / 86400000);
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   async function closeJudging() {
     setBusy(true);
     await supabase.from('issues').update({ is_open: false }).eq('id', issue.id);
     setBusy(false);
     onRefresh();
+  }
+
+  async function cancelIssue() {
+    if (!confirm(`作废该议题？已表态用户的判断不计入段位。\n\n${issue.title}`)) return;
+    setBusy(true);
+    await supabase
+      .from('issues')
+      .update({
+        status: 'cancelled',
+        is_open: false,
+        settled_at: new Date().toISOString(),
+        settlement_note: '管理员作废',
+      })
+      .eq('id', issue.id);
+    setBusy(false);
+    onRefresh();
+  }
+
+  if (editing) {
+    return <EditIssueForm issue={issue} onCancel={() => setEditing(false)} onDone={() => { setEditing(false); onRefresh(); }} />;
   }
 
   return (
@@ -169,9 +202,160 @@ function IssueRow({ issue, onRefresh }: { issue: Issue; onRefresh: () => void })
       >
         参与 {issue.total_count_cache ?? 0} · 计段位 {issue.ranked_count_cache ?? 0}
       </div>
-      <Btn kind="secondary" size="sm" disabled={busy} onClick={closeJudging} style={{ marginTop: 10 }}>
-        {busy ? '操作中…' : '关闭判断期'}
-      </Btn>
+      <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+        <Btn kind="secondary" size="sm" disabled={busy} onClick={closeJudging}>
+          {busy ? '…' : '关闭判断期'}
+        </Btn>
+        <Btn kind="ghost" size="sm" disabled={busy} onClick={() => setEditing(true)}>
+          编辑
+        </Btn>
+        <Btn kind="ghost" size="sm" disabled={busy} onClick={cancelIssue}>
+          作废
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
+function SettledRow({ issue, onRefresh }: { issue: Issue; onRefresh: () => void }) {
+  const [busy, setBusy] = useState(false);
+
+  async function unsettle() {
+    if (!confirm(`重新结算该议题？\n用户准确率会回退；之后需重新走结算流程。\n\n${issue.title}`)) return;
+    setBusy(true);
+    const { error } = await supabase.rpc('unsettle_issue', { p_issue_id: issue.id });
+    setBusy(false);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    onRefresh();
+  }
+
+  const statusLabel =
+    issue.status === 'correct'
+      ? { text: '✓ 支持方对', kind: 'correct' as const }
+      : issue.status === 'wrong'
+      ? { text: '✕ 反对方对', kind: 'wrong' as const }
+      : { text: '已作废', kind: 'neutral' as const };
+
+  return (
+    <div
+      style={{
+        background: '#fff',
+        borderRadius: 14,
+        padding: 14,
+        boxShadow: TOKENS.shadowSm,
+        opacity: 0.8,
+      }}
+    >
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+        <Pill kind="indigo" size="sm">{issue.category}</Pill>
+        <Pill kind={statusLabel.kind} size="sm">{statusLabel.text}</Pill>
+      </div>
+      <div style={{ fontSize: 14, fontWeight: 500, color: TOKENS.warm800, lineHeight: 1.4 }}>
+        {issue.title}
+      </div>
+      <div
+        style={{
+          fontSize: 11,
+          color: TOKENS.warm500,
+          fontFamily: TOKENS.fontMono,
+          marginTop: 6,
+        }}
+      >
+        参与 {issue.total_count_cache ?? 0} · 结算于 {issue.settled_at ? new Date(issue.settled_at).toLocaleDateString('zh-CN') : '?'}
+      </div>
+      {issue.settlement_source && (
+        <div style={{ fontSize: 11, color: TOKENS.warm500, marginTop: 4, wordBreak: 'break-all' }}>
+          来源：{issue.settlement_source}
+        </div>
+      )}
+      {issue.status !== 'cancelled' && (
+        <Btn kind="ghost" size="sm" disabled={busy} onClick={unsettle} style={{ marginTop: 10 }}>
+          {busy ? '…' : '重新结算'}
+        </Btn>
+      )}
+    </div>
+  );
+}
+
+function EditIssueForm({
+  issue,
+  onCancel,
+  onDone,
+}: {
+  issue: Issue;
+  onCancel: () => void;
+  onDone: () => void;
+}) {
+  const [title, setTitle] = useState(issue.title);
+  const [description, setDescription] = useState(issue.description ?? '');
+  const [deadline, setDeadline] = useState(issue.deadline.slice(0, 10));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function save() {
+    setBusy(true);
+    setError('');
+    const { error: e } = await supabase
+      .from('issues')
+      .update({
+        title: title.trim(),
+        description: description.trim() || null,
+        deadline: new Date(deadline + 'T23:59:59+08:00').toISOString(),
+      })
+      .eq('id', issue.id);
+    setBusy(false);
+    if (e) {
+      setError(e.message);
+      return;
+    }
+    onDone();
+  }
+
+  return (
+    <div
+      style={{
+        background: '#fff',
+        borderRadius: 14,
+        padding: 14,
+        boxShadow: TOKENS.shadowSm,
+        border: `2px solid ${TOKENS.indigo500}`,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+      }}
+    >
+      <div style={{ fontSize: 12, fontWeight: 700, color: TOKENS.warm700 }}>编辑议题</div>
+      <input
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="标题"
+        style={inputStyle}
+      />
+      <textarea
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="描述"
+        rows={3}
+        style={{ ...inputStyle, resize: 'vertical', minHeight: 60 }}
+      />
+      <input
+        type="date"
+        value={deadline}
+        onChange={(e) => setDeadline(e.target.value)}
+        style={inputStyle}
+      />
+      {error && <div style={{ fontSize: 12, color: TOKENS.wrong }}>{error}</div>}
+      <div style={{ display: 'flex', gap: 6 }}>
+        <Btn kind="primary" size="sm" disabled={busy || !title.trim()} onClick={save}>
+          {busy ? '保存中…' : '保存'}
+        </Btn>
+        <Btn kind="ghost" size="sm" onClick={onCancel}>
+          取消
+        </Btn>
+      </div>
     </div>
   );
 }

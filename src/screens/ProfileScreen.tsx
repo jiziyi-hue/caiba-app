@@ -7,6 +7,7 @@ import { Avatar, Btn, PageHeader, Pill, TabBar } from '../components/shared';
 import { RankBadge } from '../components/RankBadge';
 import { getRank, BOARD_TINTS, type Board } from '../lib/ranks';
 import { useFollowCounts, useIsFollowing } from '../lib/follows';
+import { useUnreadCount } from '../lib/notifications';
 import { COPY } from '../lib/copy';
 import type { Database } from '../types/db';
 
@@ -104,9 +105,13 @@ export function ProfileScreen() {
         onBack={() => navigate(-1)}
         action={
           isOwn ? (
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              {myProfile && <ProfileBell userId={myProfile.id} onOpen={() => navigate('/notifications')} />}
               {myProfile?.is_admin && (
                 <>
+                  <Btn kind="primary" size="sm" onClick={() => navigate('/admin/settle?new=1')}>
+                    新议题
+                  </Btn>
                   <Btn kind="ghost" size="sm" onClick={() => navigate('/admin/settle')}>
                     结算
                   </Btn>
@@ -471,5 +476,54 @@ export function ProfileScreen() {
         />
       )}
     </div>
+  );
+}
+
+function ProfileBell({ userId, onOpen }: { userId: string; onOpen: () => void }) {
+  const count = useUnreadCount(userId);
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label="消息"
+      style={{
+        position: 'relative',
+        width: 36,
+        height: 36,
+        borderRadius: 999,
+        background: TOKENS.warm50,
+        border: 'none',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 16,
+      }}
+    >
+      🔔
+      {count > 0 && (
+        <span
+          style={{
+            position: 'absolute',
+            top: -2,
+            right: -2,
+            background: TOKENS.wrong,
+            color: '#fff',
+            fontSize: 10,
+            fontWeight: 700,
+            borderRadius: 999,
+            minWidth: 16,
+            height: 16,
+            padding: '0 4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {count > 99 ? '99+' : count}
+        </span>
+      )}
+    </button>
   );
 }

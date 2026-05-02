@@ -8,10 +8,14 @@ import type { Database } from '../types/db';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type BannedWord = Database['public']['Tables']['banned_words']['Row'];
+type Post = Database['public']['Tables']['posts']['Row'];
+type Comment = Database['public']['Tables']['comments']['Row'];
 
-type Tab = 'profiles' | 'words';
+type Tab = 'profiles' | 'posts' | 'comments' | 'words';
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'profiles', label: '用户头像' },
+  { id: 'profiles', label: '用户' },
+  { id: 'posts', label: '观点帖' },
+  { id: 'comments', label: '评论' },
   { id: 'words', label: '违禁词' },
 ];
 
@@ -21,7 +25,7 @@ export function AdminModerationScreen() {
 
   return (
     <div style={{ background: TOKENS.warm25, minHeight: '100vh', paddingBottom: 40 }}>
-      <PageHeader title="内容审核" back onBack={() => navigate('/')} />
+      <PageHeader title="内容审核" back onBack={() => navigate('/me')} />
 
       <div
         style={{
@@ -58,6 +62,8 @@ export function AdminModerationScreen() {
 
       <div style={{ padding: '14px 16px' }}>
         {tab === 'profiles' && <ProfilesList />}
+        {tab === 'posts' && <PostsList />}
+        {tab === 'comments' && <CommentsList />}
         {tab === 'words' && <BannedWordsList />}
       </div>
     </div>
@@ -87,6 +93,14 @@ function ProfilesList() {
     await load();
   }
 
+  async function toggleBan(p: Profile) {
+    const next = !p.is_banned;
+    if (!confirm(next ? `封禁 ${p.name}？该用户将无法发帖/评论/表态` : `解封 ${p.name}？`)) return;
+    const { error } = await supabase.from('profiles').update({ is_banned: next }).eq('id', p.id);
+    if (error) { alert(error.message); return; }
+    await load();
+  }
+
   if (loading) return <Loading />;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -102,6 +116,7 @@ function ProfilesList() {
             display: 'flex',
             alignItems: 'center',
             gap: 12,
+            opacity: p.is_banned ? 0.6 : 1,
           }}
         >
           {p.avatar_url ? (
@@ -131,49 +146,185 @@ function ProfilesList() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: TOKENS.warm800 }}>
               {p.name}
-              {p.is_admin && (
-                <span
-                  style={{
-                    fontSize: 9,
-                    background: TOKENS.indigo50,
-                    color: TOKENS.indigo700,
-                    padding: '1px 6px',
-                    borderRadius: 4,
-                    fontWeight: 700,
-                    marginLeft: 6,
-                  }}
-                >
-                  ADMIN
-                </span>
-              )}
+              {p.is_admin && <BadgeTag bg={TOKENS.indigo50} fg={TOKENS.indigo700} text="ADMIN" />}
+              {p.is_banned && <BadgeTag bg={TOKENS.wrongTint} fg={TOKENS.wrong} text="BANNED" />}
             </div>
             <div style={{ fontSize: 12, color: TOKENS.warm500, fontFamily: TOKENS.fontMono }}>
               @{p.handle}
             </div>
             {p.bio && (
-              <div style={{ fontSize: 12, color: TOKENS.warm600, marginTop: 4 }}>
-                {p.bio}
-              </div>
+              <div style={{ fontSize: 12, color: TOKENS.warm600, marginTop: 4 }}>{p.bio}</div>
             )}
           </div>
-          {p.avatar_url && !p.is_admin && (
-            <button
-              type="button"
-              onClick={() => clearAvatar(p.id)}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {p.avatar_url && !p.is_admin && (
+              <SmallBtn onClick={() => clearAvatar(p.id)} color={TOKENS.wrong}>
+                清头像
+              </SmallBtn>
+            )}
+            {!p.is_admin && (
+              <SmallBtn
+                onClick={() => toggleBan(p)}
+                color={p.is_banned ? TOKENS.warm700 : TOKENS.wrong}
+              >
+                {p.is_banned ? '解封' : '封禁'}
+              </SmallBtn>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+interface JoinedPost extends Post {
+  author?: { name: string; handle: string } | null;
+}
+
+function PostsList() {
+  const [posts, setPosts] = useState<JoinedPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    setLoading(true);
+    const { data } = await supabase
+      .from('posts')
+      .select('*, author:profiles!posts_author_id_fkey(name,handle)')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    setPosts((data ?? []) as JoinedPost[]);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function remove(id: string, title: string) {
+    if (!confirm(`删除观点：「${title.slice(0, 30)}」？`)) return;
+    const { error } = await supabase.from('posts').delete().eq('id', id);
+    if (error) { alert(error.message); return; }
+    await load();
+  }
+
+  if (loading) return <Loading />;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {posts.length === 0 && <Empty />}
+      {posts.map((p) => (
+        <div
+          key={p.id}
+          style={{
+            background: '#fff',
+            borderRadius: 14,
+            padding: 14,
+            boxShadow: TOKENS.shadowSm,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <div
               style={{
-                padding: '6px 10px',
-                fontSize: 11,
-                color: TOKENS.wrong,
-                background: 'transparent',
-                border: `1px solid ${TOKENS.warm200}`,
-                borderRadius: 6,
-                cursor: 'pointer',
-                fontFamily: TOKENS.fontSans,
+                fontSize: 14,
+                fontWeight: 700,
+                color: TOKENS.warm800,
+                flex: 1,
+                lineHeight: 1.4,
               }}
             >
-              清头像
-            </button>
-          )}
+              {p.title}
+            </div>
+            <SmallBtn onClick={() => remove(p.id, p.title)} color={TOKENS.wrong}>
+              删除
+            </SmallBtn>
+          </div>
+          <div style={{ fontSize: 12, color: TOKENS.warm600, lineHeight: 1.5 }}>
+            {extractExcerpt(p.content)}
+          </div>
+          <div
+            style={{
+              fontSize: 11,
+              color: TOKENS.warm500,
+              fontFamily: TOKENS.fontMono,
+              display: 'flex',
+              gap: 10,
+            }}
+          >
+            <span>@{p.author?.handle ?? '?'}</span>
+            <span>▲ {p.upvotes ?? 0}</span>
+            <span>💬 {p.comment_count ?? 0}</span>
+            <span>{new Date(p.created_at!).toLocaleDateString('zh-CN')}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+interface JoinedComment extends Comment {
+  author?: { name: string; handle: string } | null;
+}
+
+function CommentsList() {
+  const [comments, setComments] = useState<JoinedComment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    setLoading(true);
+    const { data } = await supabase
+      .from('comments')
+      .select('*, author:profiles!comments_author_id_fkey(name,handle)')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    setComments((data ?? []) as JoinedComment[]);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function remove(id: string, body: string) {
+    if (!confirm(`删除评论：「${body.slice(0, 40)}」？`)) return;
+    const { error } = await supabase.from('comments').delete().eq('id', id);
+    if (error) { alert(error.message); return; }
+    await load();
+  }
+
+  if (loading) return <Loading />;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {comments.length === 0 && <Empty />}
+      {comments.map((c) => (
+        <div
+          key={c.id}
+          style={{
+            background: '#fff',
+            borderRadius: 12,
+            padding: 12,
+            boxShadow: TOKENS.shadowSm,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+          }}
+        >
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ fontSize: 13, color: TOKENS.warm800, flex: 1, lineHeight: 1.5 }}>
+              {c.body}
+            </div>
+            <SmallBtn onClick={() => remove(c.id, c.body)} color={TOKENS.wrong}>
+              删除
+            </SmallBtn>
+          </div>
+          <div
+            style={{
+              fontSize: 11,
+              color: TOKENS.warm500,
+              fontFamily: TOKENS.fontMono,
+              display: 'flex',
+              gap: 8,
+            }}
+          >
+            <span>@{c.author?.handle ?? '?'}</span>
+            <span>{c.post_id ? '观点贴' : '议题'}</span>
+            <span>{new Date(c.created_at!).toLocaleDateString('zh-CN')}</span>
+          </div>
         </div>
       ))}
     </div>
@@ -254,9 +405,7 @@ function BannedWordsList() {
             添加
           </Btn>
         </div>
-        {error && (
-          <div style={{ fontSize: 12, color: TOKENS.wrong, marginTop: 6 }}>{error}</div>
-        )}
+        {error && <div style={{ fontSize: 12, color: TOKENS.wrong, marginTop: 6 }}>{error}</div>}
       </div>
 
       {loading ? (
@@ -303,6 +452,54 @@ function BannedWordsList() {
   );
 }
 
+function SmallBtn({
+  children,
+  onClick,
+  color,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  color: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: '5px 10px',
+        fontSize: 11,
+        color,
+        background: 'transparent',
+        border: `1px solid ${TOKENS.warm200}`,
+        borderRadius: 6,
+        cursor: 'pointer',
+        fontFamily: TOKENS.fontSans,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function BadgeTag({ bg, fg, text }: { bg: string; fg: string; text: string }) {
+  return (
+    <span
+      style={{
+        fontSize: 9,
+        background: bg,
+        color: fg,
+        padding: '1px 6px',
+        borderRadius: 4,
+        fontWeight: 700,
+        marginLeft: 6,
+      }}
+    >
+      {text}
+    </span>
+  );
+}
+
 function categoryKind(c: string | null): 'wrong' | 'pending' | 'oppose' | 'neutral' | 'indigo' {
   switch (c) {
     case 'terror': return 'wrong';
@@ -314,6 +511,18 @@ function categoryKind(c: string | null): 'wrong' | 'pending' | 'oppose' | 'neutr
 }
 function categoryLabel(c: string | null): string {
   return ({ terror: '涉恐', explosive: '涉爆', porn: '涉黄', political: '涉政' } as Record<string, string>)[c ?? ''] ?? '其他';
+}
+
+function extractExcerpt(content: unknown): string {
+  if (typeof content === 'string') return content.slice(0, 100);
+  if (Array.isArray(content)) {
+    const text = content
+      .filter((b: unknown) => (b as { type?: string }).type === 'text')
+      .map((b: unknown) => (b as { value?: string }).value || '')
+      .join(' ');
+    return text.slice(0, 100);
+  }
+  return '';
 }
 
 function Loading() {
@@ -340,4 +549,3 @@ function Empty() {
     </div>
   );
 }
-

@@ -12,6 +12,7 @@ import { PostScreen } from './screens/PostScreen';
 import { ComposeScreen } from './screens/ComposeScreen';
 import { AdminSettlementScreen } from './screens/AdminSettlementScreen';
 import { AdminModerationScreen } from './screens/AdminModerationScreen';
+import { NotificationsScreen } from './screens/NotificationsScreen';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
             <Route path="/me" element={<ProfileScreen />} />
             <Route path="/me/edit" element={<ProfileEditScreen />} />
             <Route path="/compose" element={<ComposeScreen />} />
+            <Route path="/notifications" element={<NotificationsScreen />} />
           </Route>
           <Route element={<RequireAuth requireAdmin />}>
             <Route path="/admin/settle" element={<AdminSettlementScreen />} />
