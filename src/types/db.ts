@@ -507,6 +507,13 @@ export type Database = {
         Args: { p_issue_id: string; p_result: boolean }
         Returns: undefined
       }
+      toggle_upvote: {
+        Args: { p_post_id: string }
+        Returns: {
+          count: number
+          upvoted: boolean
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

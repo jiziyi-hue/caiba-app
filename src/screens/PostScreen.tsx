@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/auth';
 import { TOKENS } from '../components/tokens';
 import { Avatar, IssueBadge, PageHeader, Pill } from '../components/shared';
 import { Comments } from '../components/Comments';
@@ -23,19 +24,56 @@ interface Block {
 export function PostScreen() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [post, setPost] = useState<JoinedPost | null>(null);
+  const [upvoted, setUpvoted] = useState(false);
+  const [upvoting, setUpvoting] = useState(false);
+
+  async function load() {
+    if (!id) return;
+    const { data } = await supabase
+      .from('posts')
+      .select('*, author:profiles(*), issue:issues(*)')
+      .eq('id', id)
+      .single();
+    setPost(data as JoinedPost);
+    if (user && id) {
+      const { data: uv } = await supabase
+        .from('post_upvotes')
+        .select('user_id')
+        .eq('post_id', id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      setUpvoted(!!uv);
+    }
+  }
 
   useEffect(() => {
-    if (!id) return;
-    (async () => {
-      const { data } = await supabase
-        .from('posts')
-        .select('*, author:profiles(*), issue:issues(*)')
-        .eq('id', id)
-        .single();
-      setPost(data as JoinedPost);
-    })();
-  }, [id]);
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, user?.id]);
+
+  async function toggleUpvote() {
+    if (!post || !id) return;
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setUpvoting(true);
+    try {
+      const { data, error: e } = await supabase.rpc('toggle_upvote', { p_post_id: id });
+      if (e) throw e;
+      const row = (Array.isArray(data) ? data[0] : data) as { upvoted: boolean; count: number } | null;
+      if (row) {
+        setUpvoted(row.upvoted);
+        setPost({ ...post, upvotes: row.count });
+      }
+    } catch (err) {
+      console.error('upvote failed', err);
+    } finally {
+      setUpvoting(false);
+    }
+  }
 
   if (!post) {
     return <div style={{ padding: 40, color: TOKENS.warm500 }}>{COPY.loading}</div>;
@@ -134,6 +172,47 @@ export function PostScreen() {
               )
             )}
           </div>
+        </div>
+
+        {/* Upvote bar */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            marginTop: 14,
+            background: '#fff',
+            borderRadius: 16,
+            padding: '14px 18px',
+            boxShadow: TOKENS.shadowSm,
+          }}
+        >
+          <button
+            type="button"
+            onClick={toggleUpvote}
+            disabled={upvoting}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 999,
+              border: `1.5px solid ${upvoted ? TOKENS.indigo500 : TOKENS.warm200}`,
+              background: upvoted ? TOKENS.indigo50 : '#fff',
+              color: upvoted ? TOKENS.indigo700 : TOKENS.warm700,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: upvoting ? 'wait' : 'pointer',
+              fontFamily: TOKENS.fontSans,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <span style={{ fontSize: 16 }}>▲</span>
+            {upvoted ? '已赞' : '点赞'}
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{post.upvotes ?? 0}</span>
+          </button>
+          <span style={{ fontSize: 13, color: TOKENS.warm500 }}>
+            💬 {post.comment_count ?? 0} 评论
+          </span>
         </div>
 
         <Comments target={{ type: 'post', id: post.id }} />

@@ -8,6 +8,7 @@ import { COPY } from '../lib/copy';
 import type { Database } from '../types/db';
 
 type Post = Database['public']['Tables']['posts']['Row'];
+type Topic = Database['public']['Tables']['topics']['Row'];
 
 interface JoinedPost extends Post {
   author: Database['public']['Tables']['profiles']['Row'];
@@ -17,11 +18,16 @@ interface JoinedPost extends Post {
 const TABS = ['推荐', '关注', '热榜'] as const;
 type Tab = (typeof TABS)[number];
 
+const CATS = ['全部', '时事', '科技', '娱乐', '体育'] as const;
+type Cat = (typeof CATS)[number];
+
 export function SquareScreen() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('推荐');
+  const [cat, setCat] = useState<Cat>('全部');
   const [posts, setPosts] = useState<JoinedPost[]>([]);
+  const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,17 +40,132 @@ export function SquareScreen() {
         .order(orderField, { ascending: false })
         .limit(30);
       setPosts((data ?? []) as JoinedPost[]);
+      const { data: tps } = await supabase
+        .from('topics')
+        .select('*')
+        .order('heat', { ascending: false })
+        .limit(8);
+      setTopics(tps ?? []);
       setLoading(false);
     })();
   }, [tab]);
 
+  const visiblePosts = cat === '全部' ? posts : posts.filter((p) => p.issue?.category === cat);
+  const visibleTopics = cat === '全部' ? topics : topics.filter((t) => t.category === cat);
+
   return (
     <div style={{ background: TOKENS.warm25, minHeight: '100vh', paddingBottom: 120, position: 'relative' }}>
-      <PageHeader title={COPY.squareTitle} sub={`共 ${posts.length} 条观点`} />
+      <PageHeader title={COPY.squareTitle} sub={`共 ${posts.length} 条观点 · ${topics.length} 个热议话题`} />
 
+      {/* Category chip row */}
+      <div style={{ padding: '10px 16px 4px', display: 'flex', gap: 6, overflowX: 'auto' }}>
+        {CATS.map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => setCat(c)}
+            style={{
+              padding: '7px 14px',
+              fontSize: 13,
+              fontWeight: 600,
+              borderRadius: 999,
+              border: 'none',
+              background: cat === c ? TOKENS.warm800 : '#fff',
+              color: cat === c ? '#fff' : TOKENS.warm700,
+              boxShadow: cat === c ? 'none' : `inset 0 0 0 1px ${TOKENS.warm100}`,
+              cursor: 'pointer',
+              fontFamily: TOKENS.fontSans,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+
+      {/* Topic hot list — horizontal scroll */}
+      {visibleTopics.length > 0 && (
+        <div style={{ padding: '14px 0 4px' }}>
+          <div
+            style={{
+              padding: '0 16px 10px',
+              fontSize: 13,
+              fontWeight: 700,
+              color: TOKENS.warm700,
+              letterSpacing: '0.04em',
+            }}
+          >
+            🔥 {cat === '全部' ? '话题热榜' : `${cat}热榜`}
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              gap: 10,
+              overflowX: 'auto',
+              padding: '0 16px 4px',
+              scrollbarWidth: 'none',
+            }}
+          >
+            {visibleTopics.map((tp, i) => (
+              <div
+                key={tp.id}
+                onClick={() => navigate(`/topic/${tp.id}`)}
+                style={{
+                  flexShrink: 0,
+                  width: 180,
+                  background: '#fff',
+                  borderRadius: 16,
+                  padding: 14,
+                  boxShadow: TOKENS.shadowSm,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: TOKENS.indigo500,
+                    fontWeight: 700,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  <span style={{ color: TOKENS.warm400 }}>#{i + 1}</span>
+                </div>
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: TOKENS.warm800,
+                    lineHeight: 1.3,
+                    overflow: 'hidden',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                  }}
+                >
+                  #{tp.name}
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: TOKENS.warm500,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  热度 {(tp.heat ?? 0).toLocaleString()} · {(tp.participants ?? 0).toLocaleString()} 人
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tabs */}
       <div
         style={{
-          padding: '12px 16px 14px',
+          padding: '14px 16px 14px',
           display: 'flex',
           gap: 18,
           borderBottom: `1px solid ${TOKENS.warm100}`,
@@ -74,7 +195,7 @@ export function SquareScreen() {
       <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {loading ? (
           <div style={{ color: TOKENS.warm500, padding: 20 }}>{COPY.loading}</div>
-        ) : posts.length === 0 ? (
+        ) : visiblePosts.length === 0 ? (
           <div
             style={{
               background: '#fff',
@@ -85,10 +206,10 @@ export function SquareScreen() {
               boxShadow: TOKENS.shadowSm,
             }}
           >
-            还没有观点 · 写第一条 →
+            暂无{cat === '全部' ? '' : cat}观点 · 写第一条 →
           </div>
         ) : (
-          posts.map((p) => {
+          visiblePosts.map((p) => {
             const cardData: PostCardData = {
               id: p.id,
               title: p.title,

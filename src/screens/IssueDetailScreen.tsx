@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { TOKENS } from '../components/tokens';
-import { Btn, PageHeader, Pill, StanceBar } from '../components/shared';
+import { Btn, PageHeader, Pill, PostCard, StanceBar, type PostCardData } from '../components/shared';
 import { Comments } from '../components/Comments';
 import { COPY } from '../lib/copy';
 import { canCommit, getPhaseInfo } from '../lib/phase';
@@ -11,6 +11,12 @@ import type { Database } from '../types/db';
 
 type Issue = Database['public']['Tables']['issues']['Row'];
 type Judgment = Database['public']['Tables']['judgments']['Row'];
+type Post = Database['public']['Tables']['posts']['Row'];
+type Profile = Database['public']['Tables']['profiles']['Row'];
+
+interface JoinedPost extends Post {
+  author: Pick<Profile, 'name' | 'avatar_tint' | 'is_admin'>;
+}
 
 export function IssueDetailScreen() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +24,7 @@ export function IssueDetailScreen() {
   const { user } = useAuth();
   const [issue, setIssue] = useState<Issue | null>(null);
   const [myJudgment, setMyJudgment] = useState<Judgment | null>(null);
+  const [relatedPosts, setRelatedPosts] = useState<JoinedPost[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -34,6 +41,13 @@ export function IssueDetailScreen() {
         .maybeSingle();
       setMyJudgment(jdg);
     }
+    const { data: posts } = await supabase
+      .from('posts')
+      .select('*, author:profiles(name,avatar_tint,is_admin)')
+      .eq('issue_id', id)
+      .order('upvotes', { ascending: false })
+      .limit(5);
+    setRelatedPosts((posts ?? []) as JoinedPost[]);
   }
 
   useEffect(() => {
@@ -265,29 +279,65 @@ export function IssueDetailScreen() {
           </div>
         )}
 
+        {/* 相关观点 */}
+        {relatedPosts.length > 0 && (
+          <div style={{ marginTop: 18 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                padding: '0 4px 12px',
+              }}
+            >
+              <div style={{ fontSize: 16, fontWeight: 700, color: TOKENS.warm800 }}>
+                相关观点
+              </div>
+              <div style={{ fontSize: 12, color: TOKENS.warm500 }}>
+                {relatedPosts.length} 条
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {relatedPosts.map((p) => {
+                const card: PostCardData = {
+                  id: p.id,
+                  title: p.title,
+                  excerpt: extractExcerpt(p.content),
+                  issue: null,
+                  stance: p.stance == null ? null : p.stance ? 'support' : 'oppose',
+                  verified: (p.verified_status ?? null) as 'correct' | 'wrong' | null,
+                  author: {
+                    name: p.author.name,
+                    accuracy: 0,
+                    tint: (p.author.avatar_tint as 'indigo') ?? 'warm',
+                  },
+                  upvotes: p.upvotes ?? 0,
+                  comments: p.comment_count ?? 0,
+                };
+                return (
+                  <PostCard key={p.id} post={card} onOpen={() => navigate(`/post/${p.id}`)} />
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <Comments target={{ type: 'issue', id: issue.id }} />
       </div>
 
-      <button
-        type="button"
-        onClick={() => navigate('/')}
-        style={{
-          position: 'fixed',
-          bottom: 20,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          padding: '10px 20px',
-          borderRadius: 999,
-          background: '#fff',
-          border: `1px solid ${TOKENS.warm200}`,
-          color: TOKENS.warm700,
-          fontSize: 13,
-          cursor: 'pointer',
-          fontFamily: TOKENS.fontSans,
-        }}
-      >
-        ‹ 返回首页
-      </button>
     </div>
   );
 }
+
+function extractExcerpt(content: unknown): string {
+  if (typeof content === 'string') return content.slice(0, 140);
+  if (Array.isArray(content)) {
+    return content
+      .filter((b: unknown) => (b as { type?: string }).type === 'text')
+      .map((b: unknown) => (b as { value?: string }).value || '')
+      .join(' ')
+      .slice(0, 140);
+  }
+  return '';
+}
+

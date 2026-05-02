@@ -50,6 +50,16 @@ export function HomeScreen() {
   }, [user]);
 
   const visible = filter === '全部' ? issues : issues.filter((i) => i.category === filter);
+
+  // 时事 hero data — most engaged + closest to deadline
+  const newsIssues = issues.filter((i) => i.category === '时事' && i.status === 'pending');
+  const hottest = [...newsIssues].sort((a, b) => (b.total_count_cache ?? 0) - (a.total_count_cache ?? 0))[0];
+  const closest = [...newsIssues].sort(
+    (a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
+  )[0];
+  const showHero = filter === '时事' && (hottest || closest);
+  const heroIds = new Set([hottest?.id, closest?.id].filter(Boolean));
+  const listed = filter === '时事' ? visible.filter((i) => !heroIds.has(i.id)) : visible;
   const cardData = (i: Issue): IssueCardData => {
     const j = myJudgments.get(i.id);
     return {
@@ -157,8 +167,137 @@ export function HomeScreen() {
         ))}
       </div>
 
+      {/* 时事 hero band */}
+      {showHero && (
+        <div style={{ padding: '0 16px 14px' }}>
+          <div
+            style={{
+              background: 'linear-gradient(135deg, #1F2937 0%, #0F172A 100%)',
+              borderRadius: 20,
+              padding: 18,
+              color: '#fff',
+              boxShadow: '0 8px 24px rgba(15,23,42,0.18)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+              <div
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 999,
+                  background: '#F87171',
+                  boxShadow: '0 0 0 3px rgba(248,113,113,0.25)',
+                }}
+              />
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.12em',
+                  color: '#FCA5A5',
+                  fontFamily: TOKENS.fontMono,
+                  textTransform: 'uppercase',
+                }}
+              >
+                时事 · 实时关注
+              </div>
+              <div style={{ flex: 1 }} />
+              <div
+                style={{
+                  fontSize: 10,
+                  color: '#94A3B8',
+                  fontFamily: TOKENS.fontMono,
+                }}
+              >
+                {newsIssues.length} 条议题
+              </div>
+            </div>
+            {hottest && (
+              <div
+                onClick={() => navigate(`/issue/${hottest.id}`)}
+                style={{
+                  cursor: 'pointer',
+                  paddingBottom: closest && closest.id !== hottest.id ? 14 : 0,
+                  borderBottom:
+                    closest && closest.id !== hottest.id ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: '#94A3B8',
+                    fontWeight: 600,
+                    fontFamily: TOKENS.fontMono,
+                    marginBottom: 6,
+                  }}
+                >
+                  🔥 最热
+                </div>
+                <div
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: '#fff',
+                    lineHeight: 1.4,
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  {hottest.title}
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    marginTop: 10,
+                    fontSize: 12,
+                    color: '#CBD5E1',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  <span style={{ fontWeight: 600 }}>
+                    支持{' '}
+                    <span style={{ color: '#60A5FA' }}>{hottest.total_pct_cache ?? 0}%</span>
+                  </span>
+                  <span style={{ color: '#475569' }}>·</span>
+                  <span>{(hottest.total_count_cache ?? 0).toLocaleString()} 人参与</span>
+                  <span style={{ color: '#475569' }}>·</span>
+                  <span>
+                    {Math.max(
+                      0,
+                      Math.ceil(
+                        (new Date(hottest.deadline).getTime() - Date.now()) / 86400000
+                      )
+                    )}{' '}
+                    天后结算
+                  </span>
+                </div>
+              </div>
+            )}
+            {closest && closest.id !== hottest?.id && (
+              <div onClick={() => navigate(`/issue/${closest.id}`)} style={{ cursor: 'pointer', paddingTop: 14 }}>
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: '#94A3B8',
+                    fontWeight: 600,
+                    fontFamily: TOKENS.fontMono,
+                    marginBottom: 6,
+                  }}
+                >
+                  ⏱ 距结算最近
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#E2E8F0', lineHeight: 1.4 }}>
+                  {closest.title}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {loading ? null : visible.length === 0 ? (
+        {loading ? null : listed.length === 0 && !showHero ? (
           <div
             style={{
               background: '#fff',
@@ -172,7 +311,7 @@ export function HomeScreen() {
             {COPY.emptyHome}
           </div>
         ) : (
-          visible.map((i) => (
+          listed.map((i) => (
             <IssueCard key={i.id} issue={cardData(i)} onOpen={() => navigate(`/issue/${i.id}`)} />
           ))
         )}
