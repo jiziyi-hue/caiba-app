@@ -105,6 +105,11 @@ export function ProfileScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleParam, myProfile?.id]);
 
+  const filteredHistory = useMemo(
+    () => history.filter(HISTORY_PREDICATES[historyFilter] ?? (() => true)),
+    [history, historyFilter]
+  );
+
   if (loading) {
     return (
       <div style={{ padding: 40, color: TOKENS.warm500, fontFamily: TOKENS.fontSans }}>
@@ -126,11 +131,6 @@ export function ProfileScreen() {
   const settledTotal = Number(acc?.settled_total ?? 0);
   const correctTotal = Number(acc?.correct_total ?? 0);
   const rank = getRank(accuracyPct);
-
-  const filteredHistory = useMemo(
-    () => history.filter(HISTORY_PREDICATES[historyFilter] ?? (() => true)),
-    [history, historyFilter]
-  );
 
   return (
     <div style={{ background: TOKENS.warm25, minHeight: '100vh', paddingBottom: 120 }}>
