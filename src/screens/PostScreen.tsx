@@ -24,7 +24,7 @@ interface Block {
 export function PostScreen() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [post, setPost] = useState<JoinedPost | null>(null);
   const [upvoted, setUpvoted] = useState(false);
   const [upvoting, setUpvoting] = useState(false);
@@ -75,15 +75,51 @@ export function PostScreen() {
     }
   }
 
+  async function deletePost() {
+    if (!post || !id) return;
+    if (!confirm(`删除观点：「${post.title.slice(0, 30)}」？\n\n该操作不可撤销，连带评论也会清空。`)) return;
+    const { error } = await supabase.from('posts').delete().eq('id', id);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    navigate(-1);
+  }
+
   if (!post) {
     return <div style={{ padding: 40, color: TOKENS.warm500 }}>{COPY.loading}</div>;
   }
 
   const blocks: Block[] = Array.isArray(post.content) ? (post.content as unknown as Block[]) : [];
+  const canDelete = !!profile?.is_admin || (!!user && user.id === post.author_id);
 
   return (
     <div style={{ background: TOKENS.warm25, minHeight: '100vh', paddingBottom: 40 }}>
-      <PageHeader title="观点帖" back onBack={() => navigate(-1)} />
+      <PageHeader
+        title="观点帖"
+        back
+        onBack={() => navigate(-1)}
+        action={
+          canDelete ? (
+            <button
+              type="button"
+              onClick={deletePost}
+              style={{
+                padding: '6px 12px',
+                fontSize: 12,
+                color: TOKENS.wrong,
+                background: 'transparent',
+                border: `1px solid ${TOKENS.warm200}`,
+                borderRadius: 999,
+                cursor: 'pointer',
+                fontFamily: TOKENS.fontSans,
+              }}
+            >
+              删除
+            </button>
+          ) : undefined
+        }
+      />
 
       <div style={{ padding: '14px 16px' }}>
         {post.issue && (
