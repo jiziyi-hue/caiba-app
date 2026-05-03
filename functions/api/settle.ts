@@ -7,8 +7,9 @@ import { createClient } from '@supabase/supabase-js';
 interface Env {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
-  RESEND_API_KEY?: string;
+  BREVO_API_KEY?: string;
   FROM_EMAIL?: string;
+  FROM_NAME?: string;
 }
 
 interface SettleBody {
@@ -82,7 +83,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   // 8. Send settlement emails to all judging users (fire-and-forget)
-  if (env.RESEND_API_KEY && body.result !== 'cancelled') {
+  if (env.BREVO_API_KEY && body.result !== 'cancelled') {
     sendSettlementEmails(admin, env, body.issueId, body.result).catch(() => {});
   }
 
@@ -119,41 +120,42 @@ async function sendSettlementEmails(
   }
   if (emails.length === 0) return;
 
-  const from = env.FROM_EMAIL ?? 'noreply@jiziyi.asia';
+  const fromEmail = env.FROM_EMAIL ?? 'noreply@jiziyi.asia';
+  const fromName = env.FROM_NAME ?? '灼见';
   const settlementBool = result === 'correct';
 
-  // Build batch emails
-  const batch = emails.map(({ userId, email }) => {
+  // Send via Brevo transactional email API (one call per recipient, batched by 50)
+  for (const { userId, email } of emails) {
     const judgment = judgments.find((j) => j.user_id === userId);
     const isCorrect = judgment ? judgment.stance === settlementBool : false;
     const countsTowardRank = judgment?.counts_toward_rank ?? false;
-    const rankNote = countsTowardRank ? '（计入段位）' : '（围观，不计段位）';
+    const rankNote = countsTowardRank ? '' : '（围观判断，不计段位）';
     const subject = isCorrect
       ? `✓ 你猜对了！《${issue.title}》`
       : `✕ 这次看走眼了《${issue.title}》`;
-    const body = `
-<p>你好，</p>
-<p>灼见《${issue.title}》议题已结算。</p>
-<p><strong>结算结果：${result === 'correct' ? '支持方正确' : '反对方正确'}</strong></p>
-<p>你的判断：<strong>${judgment?.stance ? '支持' : '反对'}</strong> ${rankNote}</p>
-<p>${isCorrect ? '🎉 恭喜，你预测正确！准确率+1' : '🙁 这次没押中，下次加油'}</p>
-<p><a href="https://www.jiziyi.asia">查看段位 →</a></p>
-<p style="color:#999;font-size:12px">灼见 · 比世界快一步</p>
-    `.trim();
-    return { from, to: [email], subject, html: body };
-  });
+    const htmlContent = `
+<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+  <h2 style="font-size:18px;color:#131210">议题结算通知</h2>
+  <p style="color:#3A3833">《${issue.title}》</p>
+  <p><strong>结算结果：${result === 'correct' ? '✅ 支持方正确' : '❌ 反对方正确'}</strong></p>
+  <p>你的判断：<strong>${judgment?.stance ? '支持' : '反对'}</strong> ${rankNote}</p>
+  <p style="font-size:16px">${isCorrect ? '🎉 预测正确！准确率 +1，段位更新了' : '🙁 这次没押中，下次加油'}</p>
+  <a href="https://www.jiziyi.asia/me" style="display:inline-block;margin-top:12px;padding:10px 20px;background:#1A73E8;color:#fff;border-radius:8px;text-decoration:none">查看我的段位 →</a>
+  <p style="margin-top:24px;font-size:12px;color:#999">灼见 · 比世界快一步 · <a href="https://www.jiziyi.asia" style="color:#999">jiziyi.asia</a></p>
+</div>`.trim();
 
-  // Send via Resend batch (max 100 per call)
-  const chunkSize = 100;
-  for (let i = 0; i < batch.length; i += chunkSize) {
-    const chunk = batch.slice(i, i + chunkSize);
-    await fetch('https://api.resend.com/emails/batch', {
+    await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        'api-key': env.BREVO_API_KEY!,
       },
-      body: JSON.stringify(chunk),
+      body: JSON.stringify({
+        sender: { name: fromName, email: fromEmail },
+        to: [{ email }],
+        subject,
+        htmlContent,
+      }),
     });
   }
 };
