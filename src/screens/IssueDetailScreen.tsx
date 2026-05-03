@@ -7,6 +7,7 @@ import { Btn, PageHeader, Pill, PostCard, StanceBar, type PostCardData } from '.
 import { Comments } from '../components/Comments';
 import { COPY } from '../lib/copy';
 import { canCommit, getPhaseInfo } from '../lib/phase';
+import { shareUrl } from '../lib/share';
 import type { Database } from '../types/db';
 
 type Issue = Database['public']['Tables']['issues']['Row'];
@@ -32,17 +33,7 @@ export function IssueDetailScreen() {
 
   async function shareIssue() {
     const url = `https://www.jiziyi.asia/issue/${issue!.id}`;
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      // fallback for older browsers
-      const el = document.createElement('textarea');
-      el.value = url;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
-    }
+    await shareUrl(url, issue!.title, `灼见：${issue!.title}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }

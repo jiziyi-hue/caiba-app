@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -12,6 +12,7 @@ import { useUnreadCount } from '../lib/notifications';
 import { COPY } from '../lib/copy';
 import type { Database } from '../types/db';
 import { ISSUE_CATEGORIES } from '../lib/categories';
+import { toPng } from 'html-to-image';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Judgment = Database['public']['Tables']['judgments']['Row'];
@@ -56,6 +57,8 @@ export function ProfileScreen() {
   const [issuesCollapsed, setIssuesCollapsed] = useState(false);
   const [myIssues, setMyIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sharing, setSharing] = useState(false);
+  const rankCardRef = useRef<HTMLDivElement>(null);
 
   const isOwn = !handleParam || handleParam === myProfile?.handle;
   const { counts } = useFollowCounts(profile?.id ?? null);
@@ -334,6 +337,7 @@ export function ProfileScreen() {
 
         {/* Accuracy ring */}
         <div
+          ref={rankCardRef}
           style={{
             background: '#fff',
             borderRadius: 20,
@@ -477,6 +481,49 @@ export function ProfileScreen() {
               </div>
             ))}
           </div>
+
+          {/* Share rank card */}
+          <button
+            type="button"
+            onClick={async () => {
+              if (!rankCardRef.current) return;
+              setSharing(true);
+              try {
+                const png = await toPng(rankCardRef.current, { pixelRatio: 2 });
+                const name = `${profile.name}-${rank.name}-灼见.png`;
+                if (navigator.share && navigator.canShare?.({ files: [] })) {
+                  const res = await fetch(png);
+                  const blob = await res.blob();
+                  const file = new File([blob], name, { type: 'image/png' });
+                  await navigator.share({ title: `${profile.name} 在灼见的段位`, files: [file] });
+                } else {
+                  const a = document.createElement('a');
+                  a.href = png;
+                  a.download = name;
+                  a.click();
+                }
+              } catch {
+                // user cancelled share
+              } finally {
+                setSharing(false);
+              }
+            }}
+            style={{
+              marginTop: 16,
+              width: '100%',
+              padding: '10px 0',
+              fontSize: 13,
+              fontWeight: 600,
+              color: TOKENS.warm600,
+              background: TOKENS.warm50,
+              border: 'none',
+              borderRadius: 10,
+              cursor: sharing ? 'wait' : 'pointer',
+              fontFamily: TOKENS.fontSans,
+            }}
+          >
+            {sharing ? '生成中…' : '📤 分享段位'}
+          </button>
         </div>
 
         {/* 我的投稿 */}

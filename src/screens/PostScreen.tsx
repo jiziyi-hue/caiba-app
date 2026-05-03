@@ -6,6 +6,7 @@ import { TOKENS } from '../components/tokens';
 import { Avatar, IssueBadge, PageHeader, Pill } from '../components/shared';
 import { Comments } from '../components/Comments';
 import { COPY } from '../lib/copy';
+import { shareUrl } from '../lib/share';
 import type { Database } from '../types/db';
 
 type Post = Database['public']['Tables']['posts']['Row'];
@@ -28,6 +29,7 @@ export function PostScreen() {
   const [post, setPost] = useState<JoinedPost | null>(null);
   const [upvoted, setUpvoted] = useState(false);
   const [upvoting, setUpvoting] = useState(false);
+  const [shared, setShared] = useState(false);
 
   async function load() {
     if (!id) return;
@@ -73,6 +75,13 @@ export function PostScreen() {
     } finally {
       setUpvoting(false);
     }
+  }
+
+  async function sharePost() {
+    const url = `https://www.jiziyi.asia/post/${id}`;
+    await shareUrl(url, post!.title);
+    setShared(true);
+    setTimeout(() => setShared(false), 2000);
   }
 
   async function deletePost() {
@@ -250,6 +259,26 @@ export function PostScreen() {
           <span style={{ fontSize: 13, color: TOKENS.warm500 }}>
             💬 {post.comment_count ?? 0} 评论
           </span>
+          <button
+            type="button"
+            onClick={sharePost}
+            style={{
+              marginLeft: 'auto',
+              padding: '6px 12px',
+              fontSize: 12,
+              color: shared ? TOKENS.correct : TOKENS.warm600,
+              background: 'transparent',
+              border: `1px solid ${TOKENS.warm200}`,
+              borderRadius: 999,
+              cursor: 'pointer',
+              fontFamily: TOKENS.fontSans,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            🔗 {shared ? '已复制 ✓' : '分享'}
+          </button>
         </div>
 
         <Comments target={{ type: 'post', id: post.id }} />
