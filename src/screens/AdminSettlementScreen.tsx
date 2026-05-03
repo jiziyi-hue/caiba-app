@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { TOKENS } from '../components/tokens';
 import { Btn, PageHeader, Pill } from '../components/shared';
 import { COPY } from '../lib/copy';
+import { ISSUE_CATEGORIES } from '../lib/categories';
 import type { Database } from '../types/db';
 
 type Issue = Database['public']['Tables']['issues']['Row'];
@@ -498,7 +499,7 @@ function SettleRow({ issue, onDone }: { issue: Issue; onDone: () => void }) {
 }
 
 function CreateIssueForm({ onDone }: { onDone: () => void }) {
-  const [category, setCategory] = useState<'时事' | '科技' | '娱乐' | '体育' | '游戏'>('科技');
+  const [category, setCategory] = useState<typeof ISSUE_CATEGORIES[number]>(ISSUE_CATEGORIES[1]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [deadlineDays, setDeadlineDays] = useState(90);
@@ -538,7 +539,7 @@ function CreateIssueForm({ onDone }: { onDone: () => void }) {
       <div style={{ background: '#fff', borderRadius: 14, padding: 16, boxShadow: TOKENS.shadowSm }}>
         <Lbl>分类</Lbl>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {(['时事', '科技', '娱乐', '体育', '游戏'] as const).map((c) => (
+          {ISSUE_CATEGORIES.map((c) => (
             <button
               key={c}
               type="button"

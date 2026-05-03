@@ -15,7 +15,7 @@ export function AdminStatsScreen() {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase.from('admin_stats').select('*').single();
+      const { data, error } = await supabase.rpc('get_admin_stats').single();
       if (!error) setS(data as Stats);
       setLoading(false);
     })();

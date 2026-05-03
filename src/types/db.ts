@@ -785,6 +785,33 @@ export type Database = {
     }
     Functions: {
       check_banned_words: { Args: { text_to_check: string }; Returns: string }
+      get_admin_stats: {
+        Args: never
+        Returns: {
+          banned_users: number | null
+          comments_24h: number | null
+          judgments_24h: number | null
+          new_users_24h: number | null
+          new_users_7d: number | null
+          open_issues: number | null
+          overall_accuracy_pct: number | null
+          pending_review: number | null
+          posts_24h: number | null
+          ranked_judgments_24h: number | null
+          settled_issues: number | null
+          total_comments: number | null
+          total_issues: number | null
+          total_judgments: number | null
+          total_posts: number | null
+          total_users: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "admin_stats"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       mark_notifications_seen: { Args: never; Returns: undefined }
       rate_count_comments: {
         Args: { p_seconds: number; p_user: string }
