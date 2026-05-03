@@ -82,9 +82,7 @@ export function NotificationsScreen() {
     (async () => {
       const [{ data: row }, { data: logs }] = await Promise.all([
         supabase
-          .from('user_notifications')
-          .select('*')
-          .eq('user_id', user.id)
+          .rpc('get_my_notifications')
           .single(),
         supabase
           .from('activity_log')

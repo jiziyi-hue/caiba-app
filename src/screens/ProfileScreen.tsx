@@ -67,6 +67,8 @@ export function ProfileScreen() {
             await supabase.from('profiles').select('*').eq('handle', handleParam!).maybeSingle()
           ).data;
       if (!targetProfile) {
+        // If own profile but myProfile not yet loaded, keep showing spinner
+        if (isOwn) return;
         setLoading(false);
         return;
       }

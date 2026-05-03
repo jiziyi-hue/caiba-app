@@ -23,6 +23,7 @@ export function IssueDetailScreen() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [issue, setIssue] = useState<Issue | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [myJudgment, setMyJudgment] = useState<Judgment | null>(null);
   const [relatedPosts, setRelatedPosts] = useState<JoinedPost[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -48,7 +49,8 @@ export function IssueDetailScreen() {
 
   async function load() {
     if (!id) return;
-    const { data: iss } = await supabase.from('issues').select('*').eq('id', id).single();
+    const { data: iss } = await supabase.from('issues').select('*').eq('id', id).maybeSingle();
+    if (!iss) { setNotFound(true); return; }
     setIssue(iss);
     if (user && iss) {
       const { data: jdg } = await supabase
@@ -106,6 +108,13 @@ export function IssueDetailScreen() {
     }
   }
 
+  if (notFound) {
+    return (
+      <div style={{ padding: 40, color: TOKENS.warm500, fontFamily: TOKENS.fontSans }}>
+        议题不存在或无权访问
+      </div>
+    );
+  }
   if (!issue) {
     return (
       <div style={{ padding: 40, color: TOKENS.warm500, fontFamily: TOKENS.fontSans }}>

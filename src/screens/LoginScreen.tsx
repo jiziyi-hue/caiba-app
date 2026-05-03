@@ -48,7 +48,8 @@ export function LoginScreen() {
           setError(translateErr(loginErr.message));
           return;
         }
-        const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/';
+        const raw = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/';
+        const from = raw === '/login' ? '/' : raw;
         navigate(from, { replace: true });
       }
     } finally {
