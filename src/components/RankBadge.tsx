@@ -74,6 +74,31 @@ export function RankBadge({ rank, board = '通用', size = 36, showRing = true, 
     );
 
   const totalSize = size * 1.32;
+
+  if (rank.img) {
+    return (
+      <div
+        style={{
+          position: 'relative',
+          width: totalSize,
+          height: totalSize,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          ...style,
+        }}
+      >
+        <img
+          src={rank.img}
+          width={size}
+          height={size}
+          style={{ borderRadius: 999, objectFit: 'cover' }}
+          alt={rank.name}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       style={{

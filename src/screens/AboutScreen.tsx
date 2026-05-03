@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { TOKENS } from '../components/tokens';
 import { PageHeader } from '../components/shared';
 import { Footer } from '../components/Footer';
+import { RANK_TIERS } from '../lib/ranks';
 
 interface SectionProps {
   title: string;
@@ -42,17 +43,6 @@ function Section({ title, children }: SectionProps) {
   );
 }
 
-const RANK_TIERS = [
-  { name: '启明', desc: '准确率 ≥ 75% · 神级判官' },
-  { name: '燎原', desc: '65 – 75%' },
-  { name: '烈阳', desc: '55 – 65%' },
-  { name: '微光', desc: '50 – 55%' },
-  { name: '白衣', desc: '45 – 55% · 平凡之眼' },
-  { name: '微影', desc: '45 – 50%' },
-  { name: '渊默', desc: '35 – 45%' },
-  { name: '噬影', desc: '25 – 35%' },
-  { name: '玄冥', desc: '准确率 ≤ 25% · 反向先知' },
-];
 
 export function AboutScreen() {
   const navigate = useNavigate();
@@ -84,25 +74,43 @@ export function AboutScreen() {
         </Section>
 
         <Section title="段位系统">
-          <p style={{ margin: '0 0 10px' }}>
+          <p style={{ margin: '0 0 12px' }}>
             9 段双向。准确率越靠两端段位越极端 —— 高端是「神级判官」，低端是「反向先知」（持续看反，反着押反而更准）。
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {RANK_TIERS.map((t) => (
               <div
-                key={t.name}
+                key={t.id}
                 style={{
                   display: 'flex',
-                  alignItems: 'baseline',
-                  gap: 10,
-                  fontSize: 13,
-                  fontVariantNumeric: 'tabular-nums',
+                  alignItems: 'center',
+                  gap: 12,
+                  background: TOKENS.warm25,
+                  borderRadius: 10,
+                  padding: '8px 10px',
+                  border: `1px solid ${TOKENS.warm100}`,
                 }}
               >
-                <span style={{ fontWeight: 700, color: TOKENS.warm900, minWidth: 40 }}>
-                  {t.name}
-                </span>
-                <span style={{ color: TOKENS.warm500 }}>{t.desc}</span>
+                <img
+                  src={t.img}
+                  width={40}
+                  height={40}
+                  style={{ borderRadius: 999, objectFit: 'cover', flexShrink: 0 }}
+                  alt={t.name}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: TOKENS.warm900 }}>
+                      {t.name}
+                    </span>
+                    <span style={{ fontSize: 12, color: TOKENS.warm500, fontVariantNumeric: 'tabular-nums' }}>
+                      {t.max === 100 ? `≥ ${t.min}%` : t.min === 0 ? `< ${t.max}%` : `${t.min} – ${t.max}%`}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 12, color: TOKENS.warm600, lineHeight: 1.4 }}>
+                    {t.blurb}
+                  </span>
+                </div>
               </div>
             ))}
           </div>

@@ -11,6 +11,7 @@ import { useFollowCounts, useIsFollowing } from '../lib/follows';
 import { useUnreadCount } from '../lib/notifications';
 import { COPY } from '../lib/copy';
 import type { Database } from '../types/db';
+import { ISSUE_CATEGORIES } from '../lib/categories';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Judgment = Database['public']['Tables']['judgments']['Row'];
@@ -50,6 +51,9 @@ export function ProfileScreen() {
   const [history, setHistory] = useState<Array<Judgment & { issue: Issue }>>([]);
   const [scope, setScope] = useState<Board>('通用');
   const [historyFilter, setHistoryFilter] = useState<'all' | 'correct' | 'wrong' | 'pending'>('all');
+  const [historyCollapsed, setHistoryCollapsed] = useState(false);
+  const [historyCat, setHistoryCat] = useState<string>('通用');
+  const [issuesCollapsed, setIssuesCollapsed] = useState(false);
   const [myIssues, setMyIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -106,8 +110,12 @@ export function ProfileScreen() {
   }, [handleParam, myProfile?.id]);
 
   const filteredHistory = useMemo(
-    () => history.filter(HISTORY_PREDICATES[historyFilter] ?? (() => true)),
-    [history, historyFilter]
+    () => history.filter((h) => {
+      const passResult = (HISTORY_PREDICATES[historyFilter] ?? (() => true))(h);
+      const passCat = historyCat === '通用' || h.issue?.category === historyCat;
+      return passResult && passCat;
+    }),
+    [history, historyFilter, historyCat]
   );
 
   if (loading) {
@@ -474,9 +482,16 @@ export function ProfileScreen() {
         {/* 我的投稿 */}
         {isOwn && myIssues.length > 0 && (
           <div style={{ marginTop: 18 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: TOKENS.warm700, marginBottom: 10, padding: '0 4px' }}>
-              我的投稿
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: issuesCollapsed ? 0 : 10, padding: '0 4px' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: TOKENS.warm700 }}>
+                我的投稿 <span style={{ fontSize: 12, color: TOKENS.warm400, fontWeight: 500 }}>({myIssues.length})</span>
+              </div>
+              <button type="button" onClick={() => setIssuesCollapsed(!issuesCollapsed)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 16, color: TOKENS.warm500, padding: '0 4px' }}>
+                {issuesCollapsed ? '▼' : '▲'}
+              </button>
             </div>
+            {!issuesCollapsed && (
             <div style={{ background: '#fff', borderRadius: 20, boxShadow: TOKENS.shadowSm, padding: '4px 0' }}>
               {myIssues.map((iss, i) => {
                 const statusLabel = iss.review_status === 'pending' ? { text: '待审核', color: TOKENS.pendingFg, bg: TOKENS.pendingTint }
@@ -511,25 +526,26 @@ export function ProfileScreen() {
                 );
               })}
             </div>
+            )}
           </div>
         )}
 
         {/* History list */}
         <div style={{ marginTop: 18 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'baseline',
-              justifyContent: 'space-between',
-              marginBottom: 10,
-              padding: '0 4px',
-            }}
-          >
-            <div style={{ fontSize: 14, fontWeight: 700, color: TOKENS.warm700 }}>判断履历</div>
-            <div style={{ fontSize: 11, color: TOKENS.warm500 }}>{filteredHistory.length} 条</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: historyCollapsed ? 0 : 10, padding: '0 4px' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: TOKENS.warm700 }}>
+              判断履历 <span style={{ fontSize: 12, color: TOKENS.warm400, fontWeight: 500 }}>({filteredHistory.length})</span>
+            </div>
+            <button type="button" onClick={() => setHistoryCollapsed(!historyCollapsed)}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 16, color: TOKENS.warm500, padding: '0 4px' }}>
+              {historyCollapsed ? '▼' : '▲'}
+            </button>
           </div>
+          {!historyCollapsed && (
+          <>
           {history.length > 0 && (
-            <div style={{ display: 'flex', gap: 6, marginBottom: 10, overflowX: 'auto', padding: '0 4px 4px' }}>
+            <>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 6, overflowX: 'auto', padding: '0 4px 4px' }}>
               {HISTORY_FILTERS.map((f) => (
                 <button
                   key={f.id}
@@ -553,6 +569,31 @@ export function ProfileScreen() {
                 </button>
               ))}
             </div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10, overflowX: 'auto', padding: '0 4px 4px' }}>
+              {(['通用', ...ISSUE_CATEGORIES] as string[]).map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setHistoryCat(cat)}
+                  style={{
+                    padding: '3px 10px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    borderRadius: 999,
+                    border: 'none',
+                    background: historyCat === cat ? TOKENS.warm800 : '#fff',
+                    color: historyCat === cat ? '#fff' : TOKENS.warm700,
+                    boxShadow: historyCat === cat ? 'none' : `inset 0 0 0 1px ${TOKENS.warm100}`,
+                    cursor: 'pointer',
+                    fontFamily: TOKENS.fontSans,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            </>
           )}
           {filteredHistory.length === 0 ? (
             <div
@@ -634,6 +675,8 @@ export function ProfileScreen() {
                 );
               })}
             </div>
+          )}
+          </>
           )}
         </div>
       </div>

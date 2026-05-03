@@ -12,18 +12,19 @@ export interface RankTier {
   min: number;
   max: number;
   blurb: string;
+  img: string;
 }
 
 export const RANK_TIERS: RankTier[] = [
-  { id: 'qiming', name: '启明', dir: 1, level: 4, min: 75, max: 100, blurb: '神级 · 几乎不会看走眼' },
-  { id: 'liaoyuan', name: '燎原', dir: 1, level: 3, min: 70, max: 75, blurb: '顶尖判官 · 已成趋势' },
-  { id: 'lieyang', name: '烈阳', dir: 1, level: 2, min: 60, max: 70, blurb: '稳定输出 · 远超平均' },
-  { id: 'weiguang', name: '微光', dir: 1, level: 1, min: 55, max: 60, blurb: '初露锋芒' },
-  { id: 'baiyi', name: '白衣', dir: 0, level: 0, min: 45, max: 55, blurb: '基线 · 公正中立' },
-  { id: 'weiying', name: '微影', dir: -1, level: 1, min: 40, max: 45, blurb: '逆风开始' },
-  { id: 'yuanmo', name: '渊默', dir: -1, level: 2, min: 30, max: 40, blurb: '稳定看反 · 逆向有逆向的价值' },
-  { id: 'shiying', name: '噬影', dir: -1, level: 3, min: 25, max: 30, blurb: '反向先知 · 反着押已成趋势' },
-  { id: 'xuanming', name: '玄冥', dir: -1, level: 4, min: 0, max: 25, blurb: '神人级 · 把它的判断反过来即可' },
+  { id: 'feixian',    name: '飞仙',  dir: 1,  level: 4, min: 75, max: 100, blurb: '神级判官 · 洞若观火，几乎不会看走眼',   img: '/ranks/feixian.png' },
+  { id: 'jindan',     name: '金丹',  dir: 1,  level: 3, min: 70, max: 75,  blurb: '顶尖判官 · 已成趋势',               img: '/ranks/jindan.png' },
+  { id: 'zhuji',      name: '筑基',  dir: 1,  level: 2, min: 60, max: 70,  blurb: '稳定输出 · 远超平均',               img: '/ranks/zhuji.png' },
+  { id: 'lianqi',     name: '练气',  dir: 1,  level: 1, min: 55, max: 60,  blurb: '初露锋芒 · 起步良好',               img: '/ranks/lianqi.png' },
+  { id: 'baiyi',      name: '白衣',  dir: 0,  level: 0, min: 45, max: 55,  blurb: '基线 · 公正中立',                  img: '/ranks/baiyi.png' },
+  { id: 'xiexiu',     name: '邪修',  dir: -1, level: 1, min: 40, max: 45,  blurb: '逆风开始 · 走上歧途',              img: '/ranks/xiexiu.png' },
+  { id: 'xuanming',   name: '玄冥',  dir: -1, level: 2, min: 30, max: 40,  blurb: '稳定看反 · 逆向也有逆向的价值',    img: '/ranks/xuanming.png' },
+  { id: 'kuangsheng', name: '狂圣',  dir: -1, level: 3, min: 25, max: 30,  blurb: '反向先知 · 反着押已成趋势',        img: '/ranks/kuangsheng.png' },
+  { id: 'mozun',      name: '魔尊',  dir: -1, level: 4, min: 0,  max: 25,  blurb: '神人级 · 把它的判断反过来即可',    img: '/ranks/mozun.png' },
 ];
 
 export type Board = '通用' | '时事' | '科技' | '娱乐' | '体育' | '游戏';
