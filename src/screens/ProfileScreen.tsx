@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { TOKENS } from '../components/tokens';
 import { Avatar, Btn, PageHeader, Pill, TabBar } from '../components/shared';
+import { Footer } from '../components/Footer';
 import { RankBadge } from '../components/RankBadge';
 import { getRank, BOARD_TINTS, type Board } from '../lib/ranks';
 import { useFollowCounts, useIsFollowing } from '../lib/follows';
@@ -636,6 +637,8 @@ export function ProfileScreen() {
           )}
         </div>
       </div>
+
+      {isOwn && <Footer />}
 
       {isOwn && (
         <TabBar

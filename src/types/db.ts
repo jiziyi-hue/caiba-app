@@ -785,6 +785,8 @@ export type Database = {
     }
     Functions: {
       check_banned_words: { Args: { text_to_check: string }; Returns: string }
+      cleanup_activity_log: { Args: never; Returns: number }
+      delete_my_account: { Args: never; Returns: undefined }
       get_admin_stats: {
         Args: never
         Returns: {

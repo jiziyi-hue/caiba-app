@@ -6,6 +6,7 @@ import { fetchFollowingIds } from '../lib/follows';
 import { ISSUE_CATEGORIES } from '../lib/categories';
 import { TOKENS } from '../components/tokens';
 import { PageHeader, PostCard, TabBar, type PostCardData } from '../components/shared';
+import { Footer } from '../components/Footer';
 import { COPY } from '../lib/copy';
 import type { Database } from '../types/db';
 
@@ -278,6 +279,8 @@ export function SquareScreen() {
       >
         ✎
       </button>
+
+      <Footer />
 
       <TabBar
         active="广场"

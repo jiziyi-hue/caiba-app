@@ -11,6 +11,7 @@ import {
 } from '../components/shared';
 import { useAuth } from '../lib/auth';
 import { useUnreadCount } from '../lib/notifications';
+import { Footer } from '../components/Footer';
 import { ISSUE_CATEGORIES } from '../lib/categories';
 import { COPY } from '../lib/copy';
 import { daysLeft } from '../lib/phase';
@@ -321,6 +322,8 @@ export function HomeScreen() {
           ))
         )}
       </div>
+
+      <Footer />
 
       <TabBar
         active="议题"

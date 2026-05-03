@@ -1,7 +1,19 @@
 import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import * as Sentry from '@sentry/react'
 import './styles/tokens.css'
 import App from './App.tsx'
+
+const dsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
+if (dsn) {
+  Sentry.init({
+    dsn,
+    tracesSampleRate: 0.1,
+    replaysSessionSampleRate: 0,
+    replaysOnErrorSampleRate: 1.0,
+    environment: import.meta.env.MODE,
+  });
+}
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -35,7 +47,9 @@ class ErrorBoundary extends React.Component<
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <Sentry.ErrorBoundary fallback={<></>}>
+        <App />
+      </Sentry.ErrorBoundary>
     </ErrorBoundary>
   </StrictMode>,
 )

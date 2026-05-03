@@ -151,6 +151,37 @@ export function ProfileEditScreen() {
             {error}
           </div>
         )}
+
+        <div style={{ marginTop: 40, padding: 16, borderTop: `1px solid ${TOKENS.warm100}` }}>
+          <div style={{ fontSize: 11, color: TOKENS.warm500, marginBottom: 10, lineHeight: 1.6 }}>
+            注销账号将永久删除你的资料、表态、帖子、评论和关注关系，无法撤销。
+          </div>
+          <button
+            type="button"
+            onClick={async () => {
+              const confirm1 = window.confirm('确认要注销账号吗？所有数据将永久删除。');
+              if (!confirm1) return;
+              const confirm2 = window.prompt('输入「注销」二字确认：');
+              if (confirm2 !== '注销') return;
+              const { error } = await supabase.rpc('delete_my_account');
+              if (error) { alert(error.message); return; }
+              await supabase.auth.signOut();
+              navigate('/', { replace: true });
+            }}
+            style={{
+              padding: '8px 16px',
+              fontSize: 12,
+              color: TOKENS.wrong,
+              background: 'transparent',
+              border: `1px solid ${TOKENS.wrongTint}`,
+              borderRadius: 6,
+              cursor: 'pointer',
+              fontFamily: TOKENS.fontSans,
+            }}
+          >
+            注销账号
+          </button>
+        </div>
       </div>
     </div>
   );

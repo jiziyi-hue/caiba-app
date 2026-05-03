@@ -15,6 +15,9 @@ import { AdminModerationScreen } from './screens/AdminModerationScreen';
 import { NewIssueScreen } from './screens/NewIssueScreen';
 import { AdminStatsScreen } from './screens/AdminStatsScreen';
 import { NotificationsScreen } from './screens/NotificationsScreen';
+import { AboutScreen } from './screens/AboutScreen';
+import { TermsScreen } from './screens/TermsScreen';
+import { PrivacyScreen } from './screens/PrivacyScreen';
 
 function App() {
   return (
@@ -31,6 +34,9 @@ function App() {
           <Route path="/post/:id" element={<PostScreen />} />
           <Route path="/u/:handle" element={<ProfileScreen />} />
           <Route path="/share/:judgmentId" element={<SettlementScreen />} />
+          <Route path="/about" element={<AboutScreen />} />
+          <Route path="/terms" element={<TermsScreen />} />
+          <Route path="/privacy" element={<PrivacyScreen />} />
 
           {/* Auth-required routes — write or own-self actions */}
           <Route element={<RequireAuth />}>
