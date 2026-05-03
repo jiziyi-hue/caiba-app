@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -24,6 +24,21 @@ interface AccuracyRow {
 }
 
 const SCOPES: Board[] = ['通用', '时事', '科技', '娱乐', '体育', '游戏'];
+const SETTLEMENT_THRESHOLD = 5;
+
+const HISTORY_FILTERS = [
+  { id: 'all' as const, label: '全部' },
+  { id: 'correct' as const, label: '✓ 猜对' },
+  { id: 'wrong' as const, label: '✕ 看走眼' },
+  { id: 'pending' as const, label: '待结算' },
+];
+
+const HISTORY_PREDICATES: Record<string, (h: { is_correct: boolean | null }) => boolean> = {
+  all: () => true,
+  pending: (h) => h.is_correct == null,
+  correct: (h) => h.is_correct === true,
+  wrong: (h) => h.is_correct === false,
+};
 
 export function ProfileScreen() {
   const { handle: handleParam } = useParams<{ handle?: string }>();
@@ -33,6 +48,7 @@ export function ProfileScreen() {
   const [accuracyMap, setAccuracyMap] = useState<Map<string, AccuracyRow>>(new Map());
   const [history, setHistory] = useState<Array<Judgment & { issue: Issue }>>([]);
   const [scope, setScope] = useState<Board>('通用');
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'correct' | 'wrong' | 'pending'>('all');
   const [loading, setLoading] = useState(true);
 
   const isOwn = !handleParam || handleParam === myProfile?.handle;
@@ -97,6 +113,11 @@ export function ProfileScreen() {
   const correctTotal = Number(acc?.correct_total ?? 0);
   const rank = getRank(accuracyPct);
 
+  const filteredHistory = useMemo(
+    () => history.filter(HISTORY_PREDICATES[historyFilter] ?? (() => true)),
+    [history, historyFilter]
+  );
+
   return (
     <div style={{ background: TOKENS.warm25, minHeight: '100vh', paddingBottom: 120 }}>
       <PageHeader
@@ -118,7 +139,15 @@ export function ProfileScreen() {
                   <Btn kind="ghost" size="sm" onClick={() => navigate('/admin/moderation')}>
                     审核
                   </Btn>
+                  <Btn kind="ghost" size="sm" onClick={() => navigate('/admin/stats')}>
+                    数据
+                  </Btn>
                 </>
+              )}
+              {!myProfile?.is_admin && (
+                <Btn kind="secondary" size="sm" onClick={() => navigate('/issue/new')}>
+                  投稿
+                </Btn>
               )}
               <Btn kind="secondary" size="sm" onClick={() => navigate('/me/edit')}>
                 编辑
@@ -252,6 +281,35 @@ export function ProfileScreen() {
           ))}
         </div>
 
+        {/* Onboarding card for new users */}
+        {isOwn && settledTotal < SETTLEMENT_THRESHOLD && (
+          <div
+            onClick={() => navigate('/')}
+            style={{
+              marginTop: 12,
+              padding: '18px 20px',
+              borderRadius: 16,
+              background: 'linear-gradient(135deg, #1A73E8 0%, #4A90E2 100%)',
+              color: '#fff',
+              boxShadow: TOKENS.shadowSm,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+            }}
+          >
+            <div style={{ fontSize: 32 }}>🎯</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>
+                还差 {Math.max(0, SETTLEMENT_THRESHOLD - settledTotal)} 条进段位
+              </div>
+              <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2 }}>
+                押 5 条结算后，准确率才显示。去首页出第一招 →
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Accuracy ring */}
         <div
           style={{
@@ -313,13 +371,40 @@ export function ProfileScreen() {
               ) : (
                 <div
                   style={{
-                    fontSize: 22,
-                    fontWeight: 600,
-                    color: TOKENS.warm500,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
                     marginTop: 8,
+                    gap: 8,
                   }}
                 >
-                  {COPY.accumulating} {settledTotal}/20
+                  <div
+                    style={{
+                      fontSize: 22,
+                      fontWeight: 600,
+                      color: TOKENS.warm500,
+                    }}
+                  >
+                    {COPY.accumulating} {settledTotal}/{SETTLEMENT_THRESHOLD}
+                  </div>
+                  <div
+                    style={{
+                      width: 140,
+                      height: 6,
+                      borderRadius: 999,
+                      background: TOKENS.warm100,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${Math.min(100, (settledTotal / SETTLEMENT_THRESHOLD) * 100)}%`,
+                        height: '100%',
+                        background: TOKENS.indigo500,
+                        transition: 'width 300ms ease',
+                      }}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -376,16 +461,43 @@ export function ProfileScreen() {
         <div style={{ marginTop: 18 }}>
           <div
             style={{
-              fontSize: 14,
-              fontWeight: 700,
-              color: TOKENS.warm700,
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
               marginBottom: 10,
               padding: '0 4px',
             }}
           >
-            判断履历
+            <div style={{ fontSize: 14, fontWeight: 700, color: TOKENS.warm700 }}>判断履历</div>
+            <div style={{ fontSize: 11, color: TOKENS.warm500 }}>{filteredHistory.length} 条</div>
           </div>
-          {history.length === 0 ? (
+          {history.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10, overflowX: 'auto', padding: '0 4px 4px' }}>
+              {HISTORY_FILTERS.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setHistoryFilter(f.id)}
+                  style={{
+                    padding: '5px 12px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    borderRadius: 999,
+                    border: 'none',
+                    background: historyFilter === f.id ? TOKENS.warm800 : '#fff',
+                    color: historyFilter === f.id ? '#fff' : TOKENS.warm700,
+                    boxShadow: historyFilter === f.id ? 'none' : `inset 0 0 0 1px ${TOKENS.warm100}`,
+                    cursor: 'pointer',
+                    fontFamily: TOKENS.fontSans,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {filteredHistory.length === 0 ? (
             <div
               style={{
                 background: '#fff',
@@ -400,7 +512,7 @@ export function ProfileScreen() {
             </div>
           ) : (
             <div style={{ background: '#fff', borderRadius: 20, boxShadow: TOKENS.shadowSm, padding: '4px 0' }}>
-              {history.map((h, i) => {
+              {filteredHistory.map((h, i) => {
                 const stat = h.is_correct == null ? 'pending' : h.is_correct ? 'correct' : 'wrong';
                 const cfg =
                   stat === 'correct'
@@ -419,7 +531,7 @@ export function ProfileScreen() {
                       gap: 12,
                       padding: '14px 16px',
                       cursor: stat === 'correct' && h.counts_toward_rank ? 'pointer' : 'default',
-                      borderBottom: i < history.length - 1 ? `1px solid ${TOKENS.warm100}` : 'none',
+                      borderBottom: i < filteredHistory.length - 1 ? `1px solid ${TOKENS.warm100}` : 'none',
                       opacity: isLate ? 0.6 : 1,
                     }}
                   >

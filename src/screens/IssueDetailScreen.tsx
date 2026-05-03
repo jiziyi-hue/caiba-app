@@ -27,6 +27,24 @@ export function IssueDetailScreen() {
   const [relatedPosts, setRelatedPosts] = useState<JoinedPost[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  async function shareIssue() {
+    const url = `https://www.jiziyi.asia/issue/${issue!.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // fallback for older browsers
+      const el = document.createElement('textarea');
+      el.value = url;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   async function load() {
     if (!id) return;
@@ -151,6 +169,27 @@ export function IssueDetailScreen() {
             total={issue.total_count_cache ?? 0}
             rankedCount={issue.ranked_count_cache ?? 0}
           />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: -4 }}>
+            <button
+              type="button"
+              onClick={shareIssue}
+              style={{
+                padding: '6px 12px',
+                fontSize: 12,
+                color: TOKENS.warm600,
+                background: 'transparent',
+                border: `1px solid ${TOKENS.warm200}`,
+                borderRadius: 999,
+                cursor: 'pointer',
+                fontFamily: TOKENS.fontSans,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+            >
+              🔗 {copied ? '已复制链接 ✓' : '分享'}
+            </button>
+          </div>
         </div>
 
         {/* Stance commit panel */}

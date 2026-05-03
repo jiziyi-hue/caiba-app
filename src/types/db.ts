@@ -14,6 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          actor_id: string | null
+          comment_id: string | null
+          created_at: string
+          id: string
+          is_correct: boolean | null
+          issue_id: string | null
+          kind: string
+          post_id: string | null
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          is_correct?: boolean | null
+          issue_id?: string | null
+          kind: string
+          post_id?: string | null
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          is_correct?: boolean | null
+          issue_id?: string | null
+          kind?: string
+          post_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "user_notifications"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "activity_log_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_notifications"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       banned_words: {
         Row: {
           added_at: string | null
@@ -121,6 +207,7 @@ export type Database = {
           is_open: boolean
           opens_at: string | null
           ranked_count_cache: number | null
+          review_status: string
           settled_at: string | null
           settled_by: string | null
           settlement_note: string | null
@@ -142,6 +229,7 @@ export type Database = {
           is_open?: boolean
           opens_at?: string | null
           ranked_count_cache?: number | null
+          review_status?: string
           settled_at?: string | null
           settled_by?: string | null
           settlement_note?: string | null
@@ -163,6 +251,7 @@ export type Database = {
           is_open?: boolean
           opens_at?: string | null
           ranked_count_cache?: number | null
+          review_status?: string
           settled_at?: string | null
           settled_by?: string | null
           settlement_note?: string | null
@@ -551,6 +640,27 @@ export type Database = {
       }
     }
     Views: {
+      admin_stats: {
+        Row: {
+          banned_users: number | null
+          comments_24h: number | null
+          judgments_24h: number | null
+          new_users_24h: number | null
+          new_users_7d: number | null
+          open_issues: number | null
+          overall_accuracy_pct: number | null
+          pending_review: number | null
+          posts_24h: number | null
+          ranked_judgments_24h: number | null
+          settled_issues: number | null
+          total_comments: number | null
+          total_issues: number | null
+          total_judgments: number | null
+          total_posts: number | null
+          total_users: number | null
+        }
+        Relationships: []
+      }
       user_accuracy: {
         Row: {
           accuracy_pct: number | null

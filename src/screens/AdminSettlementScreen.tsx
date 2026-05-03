@@ -371,6 +371,12 @@ function SettleRow({ issue, onDone }: { issue: Issue; onDone: () => void }) {
   async function settle() {
     setBusy(true);
     setError('');
+    // Validate URL format
+    if (source && !/^https?:\/\/.+/.test(source)) {
+      setError('结算来源必须是完整 URL（以 http:// 或 https:// 开头）');
+      setBusy(false);
+      return;
+    }
     try {
       const { data: sess } = await supabase.auth.getSession();
       const token = sess.session?.access_token;
@@ -451,7 +457,7 @@ function SettleRow({ issue, onDone }: { issue: Issue; onDone: () => void }) {
             type="url"
             value={source}
             onChange={(e) => setSource(e.target.value)}
-            placeholder="结算来源 URL"
+            placeholder="https://... 结算来源链接（必填）"
             style={{
               padding: '8px 10px',
               borderRadius: 8,

@@ -10,9 +10,11 @@ type Profile = Database['public']['Tables']['profiles']['Row'];
 type BannedWord = Database['public']['Tables']['banned_words']['Row'];
 type Post = Database['public']['Tables']['posts']['Row'];
 type Comment = Database['public']['Tables']['comments']['Row'];
+type Issue = Database['public']['Tables']['issues']['Row'];
 
-type Tab = 'profiles' | 'posts' | 'comments' | 'words';
+type Tab = 'review' | 'profiles' | 'posts' | 'comments' | 'words';
 const TABS: { id: Tab; label: string }[] = [
+  { id: 'review', label: '议题审核' },
   { id: 'profiles', label: '用户' },
   { id: 'posts', label: '观点帖' },
   { id: 'comments', label: '评论' },
@@ -21,7 +23,7 @@ const TABS: { id: Tab; label: string }[] = [
 
 export function AdminModerationScreen() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>('profiles');
+  const [tab, setTab] = useState<Tab>('review');
 
   return (
     <div style={{ background: TOKENS.warm25, minHeight: '100vh', paddingBottom: 40 }}>
@@ -61,11 +63,135 @@ export function AdminModerationScreen() {
       </div>
 
       <div style={{ padding: '14px 16px' }}>
+        {tab === 'review' && <IssueReviewList />}
         {tab === 'profiles' && <ProfilesList />}
         {tab === 'posts' && <PostsList />}
         {tab === 'comments' && <CommentsList />}
         {tab === 'words' && <BannedWordsList />}
       </div>
+    </div>
+  );
+}
+
+interface JoinedIssue extends Issue {
+  creator?: { name: string; handle: string } | null;
+}
+
+function IssueReviewList() {
+  const [issues, setIssues] = useState<JoinedIssue[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    setLoading(true);
+    const { data } = await supabase
+      .from('issues')
+      .select('*, creator:profiles!issues_creator_id_fkey(name,handle)')
+      .eq('review_status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    setIssues((data ?? []) as JoinedIssue[]);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function approve(id: string) {
+    const { error } = await supabase
+      .from('issues')
+      .update({ review_status: 'approved', is_open: true })
+      .eq('id', id);
+    if (error) { alert(error.message); return; }
+    await load();
+  }
+
+  async function reject(id: string) {
+    const { error } = await supabase
+      .from('issues')
+      .update({ review_status: 'rejected' })
+      .eq('id', id);
+    if (error) { alert(error.message); return; }
+    await load();
+  }
+
+  if (loading) return <Loading />;
+  if (issues.length === 0) {
+    return (
+      <div
+        style={{
+          color: TOKENS.warm500,
+          padding: 28,
+          textAlign: 'center',
+          background: '#fff',
+          borderRadius: 14,
+          boxShadow: TOKENS.shadowSm,
+          fontSize: 13,
+        }}
+      >
+        暂无待审议题
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {issues.map((issue) => (
+        <div
+          key={issue.id}
+          style={{
+            background: '#fff',
+            borderRadius: 14,
+            padding: 14,
+            boxShadow: TOKENS.shadowSm,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            {issue.category && (
+              <Pill kind="neutral" size="sm">
+                {issue.category}
+              </Pill>
+            )}
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                color: TOKENS.warm800,
+                flex: 1,
+                lineHeight: 1.4,
+              }}
+            >
+              {issue.title}
+            </div>
+          </div>
+          {issue.description && (
+            <div style={{ fontSize: 12, color: TOKENS.warm600, lineHeight: 1.5 }}>
+              {String(issue.description).slice(0, 50)}
+            </div>
+          )}
+          <div
+            style={{
+              fontSize: 11,
+              color: TOKENS.warm500,
+              fontFamily: TOKENS.fontMono,
+              display: 'flex',
+              gap: 10,
+            }}
+          >
+            {issue.deadline && (
+              <span>截止 {new Date(issue.deadline).toLocaleDateString('zh-CN')}</span>
+            )}
+            <span>@{issue.creator?.handle ?? '?'}</span>
+          </div>
+          <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+            <SmallBtn onClick={() => approve(issue.id)} color="#16a34a">
+              批准
+            </SmallBtn>
+            <SmallBtn onClick={() => reject(issue.id)} color={TOKENS.wrong}>
+              拒绝
+            </SmallBtn>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

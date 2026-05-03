@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { fetchFollowingIds } from '../lib/follows';
+import { ISSUE_CATEGORIES } from '../lib/categories';
 import { TOKENS } from '../components/tokens';
 import { PageHeader, PostCard, TabBar, type PostCardData } from '../components/shared';
 import { COPY } from '../lib/copy';
@@ -19,7 +20,7 @@ interface JoinedPost extends Post {
 const TABS = ['推荐', '关注', '热榜'] as const;
 type Tab = (typeof TABS)[number];
 
-const CATS = ['全部', '时事', '科技', '娱乐', '体育', '游戏'] as const;
+const CATS = ['全部', ...ISSUE_CATEGORIES] as const;
 type Cat = (typeof CATS)[number];
 
 export function SquareScreen() {
