@@ -220,6 +220,17 @@ function IssueRow({ issue, onRefresh }: { issue: Issue; onRefresh: () => void })
 
 function SettledRow({ issue, onRefresh }: { issue: Issue; onRefresh: () => void }) {
   const [busy, setBusy] = useState(false);
+  const [notified, setNotified] = useState<number | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from('activity_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('issue_id', issue.id)
+      .eq('kind', 'settle')
+      .then(({ count }) => setNotified(count ?? 0));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [issue.id]);
 
   async function unsettle() {
     if (!confirm(`重新结算该议题？\n用户准确率会回退；之后需重新走结算流程。\n\n${issue.title}`)) return;
@@ -265,7 +276,7 @@ function SettledRow({ issue, onRefresh }: { issue: Issue; onRefresh: () => void 
           marginTop: 6,
         }}
       >
-        参与 {issue.total_count_cache ?? 0} · 结算于 {issue.settled_at ? new Date(issue.settled_at).toLocaleDateString('zh-CN') : '?'}
+        参与 {issue.total_count_cache ?? 0} · 结算于 {issue.settled_at ? new Date(issue.settled_at).toLocaleDateString('zh-CN') : '?'}{notified !== null ? ` · 已通知 ${notified} 人` : ''}
       </div>
       {issue.settlement_source && (
         <div style={{ fontSize: 11, color: TOKENS.warm500, marginTop: 4, wordBreak: 'break-all' }}>
