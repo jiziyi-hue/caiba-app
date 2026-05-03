@@ -1,7 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 64" width="220" height="64">
-  <path d="M22 10 C 14 24, 12 34, 18 46 C 22 54, 28 56, 32 56 C 28 50, 24 44, 24 36 C 24 28, 28 20, 32 14 C 28 12, 25 10, 22 10 Z" fill="#1A3A8E"/>
-  <path d="M42 14 C 50 26, 52 36, 46 46 C 42 54, 36 56, 32 56 C 36 50, 40 44, 40 36 C 40 28, 36 20, 32 14 C 36 12, 39 12, 42 14 Z" fill="#C8351E"/>
-  <rect x="27" y="27" width="10" height="10" rx="1.5" transform="rotate(45 32 32)" fill="#D9B675"/>
-  <text x="74" y="38" font-family="-apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif" font-size="30" font-weight="800" fill="#131210" letter-spacing="-1">灼见</text>
-  <text x="74" y="55" font-family="'Inter', sans-serif" font-size="10" font-weight="500" fill="#7C7770" letter-spacing="1">ZHUOJIAN · 比世界快一步</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" width="240" height="64">
+  <rect x="0" y="0" width="64" height="64" rx="14" fill="#0F1B2D"/>
+  <clipPath id="rounded2"><rect x="6" y="6" width="52" height="52" rx="11"/></clipPath>
+  <g clip-path="url(#rounded2)">
+    <rect x="6" y="6" width="26" height="52" fill="#1A73E8"/>
+    <rect x="32" y="6" width="26" height="52" fill="#E0581E"/>
+    <path d="M32 6 C 38 18, 38 46, 32 58 C 26 46, 26 18, 32 6 Z" fill="#0F1B2D"/>
+  </g>
+  <rect x="24" y="24" width="16" height="16" rx="3" fill="#E8B447" stroke="#0F1B2D" stroke-width="1.5"/>
+  <text x="78" y="38" font-family="-apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif" font-size="30" font-weight="800" fill="#131210" letter-spacing="-1">灼见</text>
+  <text x="78" y="55" font-family="'Inter', sans-serif" font-size="10" font-weight="500" fill="#7C7770" letter-spacing="1">比世界快一步</text>
 </svg>
