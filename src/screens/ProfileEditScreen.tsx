@@ -18,10 +18,19 @@ export function ProfileEditScreen() {
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f || !user) return;
+    if (f.size > 5 * 1024 * 1024) { setError('头像不能超过 5MB'); return; }
     setSaving(true);
     setError('');
     try {
-      const ext = f.name.split('.').pop() || 'jpg';
+      // Delete old avatar files to prevent orphan storage growth
+      const { data: existing } = await supabase.storage.from('avatars').list('', {
+        search: user.id,
+      });
+      if (existing && existing.length > 0) {
+        const oldPaths = existing.map((o) => o.name);
+        await supabase.storage.from('avatars').remove(oldPaths);
+      }
+      const ext = f.name.split('.').pop()?.toLowerCase() || 'jpg';
       const path = `${user.id}.${ext}`;
       const { error: upErr } = await supabase.storage.from('avatars').upload(path, f, { upsert: true });
       if (upErr) throw upErr;
