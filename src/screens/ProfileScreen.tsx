@@ -49,6 +49,7 @@ export function ProfileScreen() {
   const [history, setHistory] = useState<Array<Judgment & { issue: Issue }>>([]);
   const [scope, setScope] = useState<Board>('通用');
   const [historyFilter, setHistoryFilter] = useState<'all' | 'correct' | 'wrong' | 'pending'>('all');
+  const [myIssues, setMyIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
 
   const isOwn = !handleParam || handleParam === myProfile?.handle;
@@ -86,6 +87,16 @@ export function ProfileScreen() {
         .order('committed_at', { ascending: false })
         .limit(50);
       setHistory((jdgs ?? []) as Array<Judgment & { issue: Issue }>);
+
+      if (isOwn && targetProfile) {
+        const { data: created } = await supabase
+          .from('issues')
+          .select('id, title, category, review_status, status, is_open, created_at, total_count_cache')
+          .eq('creator_id', targetProfile.id)
+          .order('created_at', { ascending: false })
+          .limit(20);
+        setMyIssues((created ?? []) as Issue[]);
+      }
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -456,6 +467,49 @@ export function ProfileScreen() {
             ))}
           </div>
         </div>
+
+        {/* 我的投稿 */}
+        {isOwn && myIssues.length > 0 && (
+          <div style={{ marginTop: 18 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: TOKENS.warm700, marginBottom: 10, padding: '0 4px' }}>
+              我的投稿
+            </div>
+            <div style={{ background: '#fff', borderRadius: 20, boxShadow: TOKENS.shadowSm, padding: '4px 0' }}>
+              {myIssues.map((iss, i) => {
+                const statusLabel = iss.review_status === 'pending' ? { text: '待审核', color: TOKENS.pendingFg, bg: TOKENS.pendingTint }
+                  : iss.review_status === 'rejected' ? { text: '已驳回', color: TOKENS.wrong, bg: TOKENS.wrongTint }
+                  : iss.status === 'pending' ? { text: '进行中', color: TOKENS.indigo700, bg: TOKENS.indigo50 }
+                  : { text: '已结算', color: TOKENS.warm500, bg: TOKENS.warm100 };
+                return (
+                  <div
+                    key={iss.id}
+                    onClick={() => navigate(`/issue/${iss.id}`)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '12px 16px',
+                      cursor: 'pointer',
+                      borderBottom: i < myIssues.length - 1 ? `1px solid ${TOKENS.warm100}` : 'none',
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: TOKENS.warm800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {iss.title}
+                      </div>
+                      <div style={{ fontSize: 11, color: TOKENS.warm500, marginTop: 2 }}>
+                        {iss.category} · {iss.total_count_cache ?? 0} 人参与
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: statusLabel.color, background: statusLabel.bg, padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap' }}>
+                      {statusLabel.text}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* History list */}
         <div style={{ marginTop: 18 }}>

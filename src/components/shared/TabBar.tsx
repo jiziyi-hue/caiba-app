@@ -16,7 +16,7 @@ export function TabBar({ active, onTabChange }: TabBarProps) {
         position: 'fixed',
         left: 16,
         right: 16,
-        bottom: 28,
+        bottom: 'calc(28px + env(safe-area-inset-bottom, 0px))',
         maxWidth: 600,
         margin: '0 auto',
         height: 56,

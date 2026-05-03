@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { TOKENS } from '../components/tokens';
 import { Btn } from '../components/shared';
@@ -9,6 +9,7 @@ type Mode = 'login' | 'signup';
 
 export function LoginScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -47,7 +48,8 @@ export function LoginScreen() {
           setError(translateErr(loginErr.message));
           return;
         }
-        navigate('/', { replace: true });
+        const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/';
+        navigate(from, { replace: true });
       }
     } finally {
       setSubmitting(false);

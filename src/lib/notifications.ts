@@ -13,9 +13,7 @@ export function useUnreadCount(userId: string | null) {
     let cancel = false;
     (async () => {
       const { data } = await supabase
-        .from('user_notifications')
-        .select('new_likes,new_comments,new_followers,new_settlements')
-        .eq('user_id', userId)
+        .rpc('get_my_notifications')
         .single();
       if (cancel || !data) return;
       const total =

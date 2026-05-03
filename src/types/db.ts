@@ -812,6 +812,27 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_my_notifications: {
+        Args: never
+        Returns: {
+          new_comments: number | null
+          new_followers: number | null
+          new_likes: number | null
+          new_settlements: number | null
+          notifications_seen_at: string | null
+          total_correct: number | null
+          total_followers: number | null
+          total_likes: number | null
+          total_post_comments: number | null
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "user_notifications"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       mark_notifications_seen: { Args: never; Returns: undefined }
       rate_count_comments: {
         Args: { p_seconds: number; p_user: string }

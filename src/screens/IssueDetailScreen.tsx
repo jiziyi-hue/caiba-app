@@ -147,6 +147,20 @@ export function IssueDetailScreen() {
               </Pill>
             )}
           </div>
+          {issue.review_status !== 'approved' && (
+            <div
+              style={{
+                padding: '10px 14px',
+                borderRadius: 10,
+                background: issue.review_status === 'rejected' ? TOKENS.wrongTint : TOKENS.pendingTint,
+                color: issue.review_status === 'rejected' ? TOKENS.wrong : TOKENS.pendingFg,
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              {issue.review_status === 'rejected' ? '⚠️ 该议题未通过审核' : '⏳ 该议题正在等待审核'}
+            </div>
+          )}
           <div
             style={{
               fontSize: 22,
