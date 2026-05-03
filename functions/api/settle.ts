@@ -7,6 +7,8 @@ import { createClient } from '@supabase/supabase-js';
 interface Env {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
+  RESEND_API_KEY?: string;
+  FROM_EMAIL?: string;
 }
 
 interface SettleBody {
@@ -79,7 +81,81 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     if (rpcErr) return json({ error: rpcErr.message }, 500);
   }
 
+  // 8. Send settlement emails to all judging users (fire-and-forget)
+  if (env.RESEND_API_KEY && body.result !== 'cancelled') {
+    sendSettlementEmails(admin, env, body.issueId, body.result).catch(() => {});
+  }
+
   return json({ ok: true });
+}
+
+async function sendSettlementEmails(
+  admin: ReturnType<typeof createClient>,
+  env: Env,
+  issueId: string,
+  result: 'correct' | 'wrong'
+) {
+  // Get issue title
+  const { data: issue } = await admin
+    .from('issues')
+    .select('title')
+    .eq('id', issueId)
+    .single();
+  if (!issue) return;
+
+  // Get all judgments with user emails (auth.users join via service-role)
+  const { data: judgments } = await admin
+    .from('judgments')
+    .select('user_id, stance, is_correct, counts_toward_rank')
+    .eq('issue_id', issueId);
+  if (!judgments || judgments.length === 0) return;
+
+  // Fetch emails via auth admin API
+  const userIds = [...new Set(judgments.map((j) => j.user_id))];
+  const emails: { userId: string; email: string }[] = [];
+  for (const uid of userIds) {
+    const { data } = await admin.auth.admin.getUserById(uid);
+    if (data?.user?.email) emails.push({ userId: uid, email: data.user.email });
+  }
+  if (emails.length === 0) return;
+
+  const from = env.FROM_EMAIL ?? 'noreply@jiziyi.asia';
+  const settlementBool = result === 'correct';
+
+  // Build batch emails
+  const batch = emails.map(({ userId, email }) => {
+    const judgment = judgments.find((j) => j.user_id === userId);
+    const isCorrect = judgment ? judgment.stance === settlementBool : false;
+    const countsTowardRank = judgment?.counts_toward_rank ?? false;
+    const rankNote = countsTowardRank ? '（计入段位）' : '（围观，不计段位）';
+    const subject = isCorrect
+      ? `✓ 你猜对了！《${issue.title}》`
+      : `✕ 这次看走眼了《${issue.title}》`;
+    const body = `
+<p>你好，</p>
+<p>灼见《${issue.title}》议题已结算。</p>
+<p><strong>结算结果：${result === 'correct' ? '支持方正确' : '反对方正确'}</strong></p>
+<p>你的判断：<strong>${judgment?.stance ? '支持' : '反对'}</strong> ${rankNote}</p>
+<p>${isCorrect ? '🎉 恭喜，你预测正确！准确率+1' : '🙁 这次没押中，下次加油'}</p>
+<p><a href="https://www.jiziyi.asia">查看段位 →</a></p>
+<p style="color:#999;font-size:12px">灼见 · 比世界快一步</p>
+    `.trim();
+    return { from, to: [email], subject, html: body };
+  });
+
+  // Send via Resend batch (max 100 per call)
+  const chunkSize = 100;
+  for (let i = 0; i < batch.length; i += chunkSize) {
+    const chunk = batch.slice(i, i + chunkSize);
+    await fetch('https://api.resend.com/emails/batch', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      },
+      body: JSON.stringify(chunk),
+    });
+  }
 };
 
 function json(payload: unknown, status = 200) {
